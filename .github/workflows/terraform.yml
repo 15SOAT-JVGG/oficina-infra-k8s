@@ -1,0 +1,102 @@
+name: Terraform
+
+on:
+  pull_request:
+    branches: [main, homolog, production]
+  push:
+    branches: [homolog, production]
+
+permissions:
+  contents: read
+
+env:
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+  AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+  TF_VAR_aws_region: ${{ vars.AWS_REGION || 'us-east-1' }}
+  TF_IN_AUTOMATION: "true"
+
+jobs:
+  check:
+    name: Format e validação
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.10.5
+
+      - name: terraform fmt
+        run: terraform fmt -check -recursive
+
+      - name: terraform init
+        run: terraform init -backend=false -input=false
+
+      - name: terraform validate
+        run: terraform validate
+
+  plan:
+    if: github.event_name == 'pull_request'
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.10.5
+          terraform_wrapper: false
+
+      # Um único cluster compartilhado entre homologação e produção: o state é único.
+      - name: terraform init
+        run: |
+          terraform init -input=false \
+            -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
+            -backend-config="key=oficina-infra-k8s/terraform.tfstate" \
+            -backend-config="region=${AWS_REGION}"
+
+      - name: terraform plan
+        run: terraform plan -input=false -lock-timeout=60s -no-color | tee plan.txt
+
+      - name: Resumo do plan
+        if: always()
+        run: |
+          {
+            echo "### Terraform plan"
+            echo '```'
+            tail -n 60 plan.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  apply:
+    name: Apply (${{ github.ref_name }})
+    if: github.event_name == 'push'
+    needs: check
+    runs-on: ubuntu-latest
+    environment: ${{ github.ref_name }}
+    # Homolog e production compartilham o mesmo state; serializa para evitar disputa pelo lock.
+    concurrency:
+      group: terraform-apply
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.10.5
+          terraform_wrapper: false
+
+      - name: terraform init
+        run: |
+          terraform init -input=false \
+            -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
+            -backend-config="key=oficina-infra-k8s/terraform.tfstate" \
+            -backend-config="region=${AWS_REGION}"
+
+      - name: terraform apply
+        run: terraform apply -input=false -auto-approve -lock-timeout=60s
+
+      - name: Outputs
+        run: terraform output -no-color >> "$GITHUB_STEP_SUMMARY"
