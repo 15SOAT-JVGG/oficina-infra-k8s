@@ -63,3 +63,27 @@ variable "lab_role_name" {
   type        = string
   default     = "LabRole"
 }
+
+variable "app_upstream_urls" {
+  description = "Endereço do Service da aplicação por ambiente (http://<hostname-do-ELB>). Ambiente ausente ou vazio fica sem o proxy para o cluster."
+  type        = map(string)
+  default     = {}
+}
+
+variable "log_retention_days" {
+  description = "Dias de retenção dos logs de acesso do API Gateway no CloudWatch."
+  type        = number
+  default     = 7
+}
+
+variable "api_throttling_burst_limit" {
+  description = "Limite de rajada de requisições do API Gateway."
+  type        = number
+  default     = 100
+}
+
+variable "api_throttling_rate_limit" {
+  description = "Limite de requisições por segundo do API Gateway."
+  type        = number
+  default     = 50
+}

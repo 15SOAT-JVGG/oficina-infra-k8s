@@ -32,3 +32,18 @@ output "update_kubeconfig_command" {
   description = "Comando para configurar o kubectl local."
   value       = "aws eks update-kubeconfig --name ${aws_eks_cluster.main.name} --region ${var.aws_region}"
 }
+
+output "api_gateway_ids" {
+  description = "Id do API Gateway de cada ambiente. O oficina-lambda-auth usa o do seu ambiente para registrar a rota de autenticação."
+  value       = { for environment, api in aws_apigatewayv2_api.main : environment => api.id }
+}
+
+output "api_gateway_execution_arns" {
+  description = "ARN de execução do API Gateway de cada ambiente, usado para autorizar o gateway a invocar a Lambda."
+  value       = { for environment, api in aws_apigatewayv2_api.main : environment => api.execution_arn }
+}
+
+output "api_gateway_urls" {
+  description = "URL pública do API Gateway de cada ambiente."
+  value       = { for environment, api in aws_apigatewayv2_api.main : environment => api.api_endpoint }
+}
