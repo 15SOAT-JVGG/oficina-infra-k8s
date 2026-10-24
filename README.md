@@ -2,7 +2,7 @@
 
 Infraestrutura Kubernetes da **Oficina Mecânica** (FIAP 16SOAT — Tech Challenge Fase 3), provisionada com
 Terraform: cluster **Amazon EKS** com node group escalável, **ECR** para a imagem da aplicação e **metrics-server**
-para o HPA.
+para o HPA, e um **API Gateway** por ambiente como porta de entrada da API.
 
 ## Tecnologias
 
@@ -10,6 +10,7 @@ para o HPA.
 - Amazon EKS (Kubernetes 1.34), node group `t3.medium` (mín. 2, máx. 4)
 - Amazon ECR com scan on push e política de retenção
 - Add-on `metrics-server` do EKS (necessário para o HPA)
+- Amazon API Gateway (HTTP API) com log de acesso em JSON no CloudWatch
 - State remoto em S3 com lock nativo (`use_lockfile`)
 - GitHub Actions para validação, plan e apply
 
@@ -37,6 +38,10 @@ configuração: a promoção entre branches funciona como esteira de aprovação
 | `aws_eks_node_group` | Nós `t3.medium`, mínimo 2 e máximo 4. |
 | `aws_eks_addon` (metrics-server) | Métricas de CPU/memória para o HPA. |
 | `aws_ecr_repository` | `oficina-app`, mantém as 15 imagens mais recentes. |
+| `aws_apigatewayv2_api` | `oficina-homolog` e `oficina-production`: HTTP API, uma por ambiente. |
+| `aws_apigatewayv2_stage` | Estágio `$default` com auto deploy, throttling e log de acesso em JSON. |
+| `aws_cloudwatch_log_group` | `/aws/apigateway/oficina-<ambiente>`, retenção de 7 dias. |
+| `aws_apigatewayv2_integration` + `aws_apigatewayv2_route` | Proxy `ANY /{proxy+}` para o Service da aplicação; só existe para o ambiente com endereço em `app_upstream_urls`. |
 
 Decisões específicas do AWS Academy / Learner Lab: usa a role existente `LabRole` (cluster e nós), não cria IAM,
 usa subnets públicas da VPC padrão (sem NAT Gateway) e restringe o cluster às AZs `us-east-1a/b/c`
@@ -60,6 +65,24 @@ flowchart LR
     NSP --> RDSP
     ECR["ECR oficina-app"] -->|imagem| EKS
 ```
+
+## API Gateway
+
+É a porta de entrada pública da API. O cliente chama o gateway, e ele decide para onde cada rota vai:
+
+- `POST /v1/auth/customer` vai para a Lambda de autenticação por CPF, que emite o JWT. A rota é criada
+  pelo repositório `oficina-lambda-auth`, que usa o id do gateway do seu ambiente (output `api_gateway_ids`).
+- Todo o resto (`ANY /{proxy+}`) vai para o Service da aplicação no cluster.
+
+O endereço do Service é um ELB criado pelo Kubernetes, não pelo Terraform, então ele é informado em
+`terraform.tfvars` (`app_upstream_urls`). Um ambiente sem endereço ali fica com o gateway criado, mas sem
+o proxy. Para descobrir o endereço:
+
+```shell
+kubectl get svc oficina-mecanica -n homolog -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+```
+
+As URLs públicas saem dos outputs `api_gateway_urls`.
 
 ## Pré-requisitos
 
@@ -100,4 +123,5 @@ A criação do cluster leva cerca de 15 minutos.
 ## Próximos passos
 
 - `oficina-app`: Dockerfile, manifests (Deployment, Service `LoadBalancer` com NLB, HPA) e pipeline de push no ECR e deploy.
-- API Gateway com VPC Link apontando para o NLB do serviço.
+- `oficina-lambda-auth`: Terraform e pipeline da Lambda, registrando `POST /v1/auth/customer` no gateway.
+- Decidir com o time se o cluster passa a ser privado (Ingress, ou NLB interno com VPC Link) em vez de expor o ELB.
