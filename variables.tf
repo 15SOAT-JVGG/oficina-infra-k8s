@@ -65,9 +65,70 @@ variable "lab_role_name" {
 }
 
 variable "app_upstream_urls" {
-  description = "Endereço do Service da aplicação por ambiente (http://<hostname-do-ELB>). Ambiente ausente ou vazio fica sem o proxy para o cluster."
+  description = "Endereço do Service da aplicação por ambiente (http://<hostname-do-ELB>), lido do contrato S3 de upstream."
   type        = map(string)
   default     = {}
+
+  validation {
+    condition = alltrue([
+      for environment, url in var.app_upstream_urls :
+      !contains(["homolog", "production"], environment) || url == "" || try(can(regex("^https?://[^/]+$", url)), false)
+    ])
+    error_message = "Cada upstream deve ser uma URL HTTP(S) sem caminho, para um ambiente homolog ou production."
+  }
+}
+
+variable "authorizer_arns" {
+  description = "ARN da Lambda Authorizer por ambiente, lido do contrato S3 de authorizer."
+  type        = map(string)
+  default     = {}
+
+  validation {
+    condition = alltrue([
+      for environment, arn in var.authorizer_arns :
+      !contains(["homolog", "production"], environment) || arn == "" || can(regex("^arn:[^:]+:lambda:[^:]+:[0-9]{12}:function:.+$", arn))
+      ]) && alltrue([
+      for environment, url in var.app_upstream_urls :
+      url == "" || try(var.authorizer_arns[environment] != "", false)
+    ])
+    error_message = "Cada upstream deve ter um ARN Lambda Authorizer válido correspondente."
+  }
+}
+
+variable "public_api_docs_environments" {
+  description = "Ambientes em que OpenAPI e Swagger UI ficam públicos para demonstrações."
+  type        = set(string)
+  default     = []
+
+  validation {
+    condition = alltrue([
+      for environment in var.public_api_docs_environments :
+      contains(["homolog", "production"], environment)
+    ])
+    error_message = "public_api_docs_environments aceita apenas homolog e production."
+  }
+}
+
+variable "gateway_contract_account_id" {
+  description = "Conta AWS dos contratos S3 de upstream e Authorizer; impede aplicar artefatos de outra conta."
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = var.gateway_contract_account_id == "" || can(regex("^[0-9]{12}$", var.gateway_contract_account_id))
+    error_message = "gateway_contract_account_id deve conter 12 dígitos."
+  }
+}
+
+variable "gateway_contract_region" {
+  description = "Região AWS registrada nos contratos S3 do Gateway."
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = var.gateway_contract_region == "" || var.gateway_contract_region == var.aws_region
+    error_message = "A região dos contratos precisa coincidir com aws_region."
+  }
 }
 
 variable "log_retention_days" {
