@@ -5,14 +5,12 @@ on:
     branches: [main, homolog, production]
   push:
     branches: [homolog, production]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 env:
-  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
   AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
   TF_VAR_aws_region: ${{ vars.AWS_REGION || 'us-east-1' }}
   TF_IN_AUTOMATION: "true"
@@ -37,42 +35,11 @@ jobs:
       - name: terraform validate
         run: terraform validate
 
-  plan:
-    if: github.event_name == 'pull_request'
-    needs: check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.10.5
-          terraform_wrapper: false
-
-      # Um único cluster compartilhado entre homologação e produção: o state é único.
-      - name: terraform init
-        run: |
-          terraform init -input=false \
-            -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
-            -backend-config="key=oficina-infra-k8s/terraform.tfstate" \
-            -backend-config="region=${AWS_REGION}"
-
-      - name: terraform plan
-        run: terraform plan -input=false -lock-timeout=60s -no-color | tee plan.txt
-
-      - name: Resumo do plan
-        if: always()
-        run: |
-          {
-            echo "### Terraform plan"
-            echo '```'
-            tail -n 60 plan.txt
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
-
   apply:
     name: Apply (${{ github.ref_name }})
-    if: github.event_name == 'push'
+    if: >-
+      (github.event_name == 'push' && (github.ref_name == 'homolog' || github.ref_name == 'production')) ||
+      (github.event_name == 'workflow_dispatch' && (github.ref_name == 'homolog' || github.ref_name == 'production'))
     needs: check
     runs-on: ubuntu-latest
     environment: ${{ github.ref_name }}
@@ -88,15 +55,77 @@ jobs:
           terraform_version: 1.10.5
           terraform_wrapper: false
 
-      - name: terraform init
+      - name: Terraform init (state compartilhado)
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+          TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
         run: |
+          [[ -n "$TF_STATE_BUCKET" ]] || { echo "Variable TF_STATE_BUCKET ausente" >&2; exit 1; }
           terraform init -input=false \
-            -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
+            -backend-config="bucket=${TF_STATE_BUCKET}" \
             -backend-config="key=oficina-infra-k8s/terraform.tfstate" \
-            -backend-config="region=${AWS_REGION}"
+            -backend-config="region=${AWS_REGION}" \
+            -backend-config="use_lockfile=true"
+          if ! terraform state list > /tmp/gateway-state-resources.txt 2>/tmp/terraform-state-list-error; then
+            if grep -q 'No state file was found' /tmp/terraform-state-list-error; then
+              : > /tmp/gateway-state-resources.txt
+            else
+              cat /tmp/terraform-state-list-error >&2
+              exit 1
+            fi
+          fi
 
-      - name: terraform apply
-        run: terraform apply -input=false -auto-approve -lock-timeout=60s
+      - name: Identidade AWS e contratos do Gateway
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+          TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+          CONTRACT_ENVIRONMENT: ${{ github.ref_name }}
+          CONTRACT_SOURCE_SHA: ${{ github.sha }}
+          CONTRACT_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+        run: |
+          account_id="$(aws sts get-caller-identity --query Account --output text)"
+          mkdir -p /tmp/oficina-gateway-contracts
+          for environment in homolog production; do
+            mkdir -p "/tmp/oficina-gateway-contracts/$environment"
+            for contract in upstream authorizer; do
+              key="oficina/config/v1/${environment}/${contract}.json"
+              if aws s3api head-object --bucket "$TF_STATE_BUCKET" --key "$key" \
+                >/dev/null 2>/tmp/contract-head-error; then
+                aws s3 cp "s3://${TF_STATE_BUCKET}/${key}" \
+                  "/tmp/oficina-gateway-contracts/${environment}/${contract}.json" --only-show-errors
+              elif grep -Eq '404|Not Found|NoSuchKey' /tmp/contract-head-error; then
+                continue
+              else
+                cat /tmp/contract-head-error >&2
+                exit 1
+              fi
+            done
+          done
+          python3 scripts/contracts-to-tfvars.py \
+            --contracts-dir /tmp/oficina-gateway-contracts \
+            --account-id "$account_id" \
+            --region "$CONTRACT_REGION" \
+            --environment "$CONTRACT_ENVIRONMENT" \
+            --source-kind infra \
+            --source-sha "$CONTRACT_SOURCE_SHA" \
+            --state-resources-file /tmp/gateway-state-resources.txt \
+            --output /tmp/gateway.auto.tfvars.json
 
-      - name: Outputs
-        run: terraform output -no-color >> "$GITHUB_STEP_SUMMARY"
+      - name: Terraform plan salvo
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+        run: terraform plan -input=false -lock-timeout=60s -no-color \
+          -var-file=/tmp/gateway.auto.tfvars.json -out=/tmp/infra.tfplan
+
+      - name: Aplicar plano salvo
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+        run: terraform apply -input=false -auto-approve /tmp/infra.tfplan
