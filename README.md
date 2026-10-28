@@ -44,46 +44,6 @@ configuração: a promoção entre branches funciona como esteira de aprovação
 | `aws_apigatewayv2_integration` + rotas | Proxy HTTP para o Service, com rota curinga protegida e exceções públicas enumeradas por método e caminho. |
 | `aws_apigatewayv2_authorizer` + `aws_lambda_permission` | Authorizer Lambda `REQUEST` (payload 2.0, resposta simples, sem cache) e permissão de invocação por ambiente. |
 
-## Observabilidade do cluster
-
-A stack compartilhada fica em [`observability/`](observability/README.md), no namespace `observability`.
-Ela inclui kube-prometheus-stack, Loki, Tempo, Alloy, Blackbox Exporter, regras iniciais e dashboard
-Kubernetes. Sua instalação é um workflow Helm manual e serializado, separado do Terraform para não
-inicializar provider Kubernetes durante a criação do EKS. O stack serve os namespaces `homolog` e
-`production`; não há releases duplicadas por ambiente.
-
-Antes de aplicar, confirmar StorageClass/EBS CSI, capacidade disponível, acesso read-only do Grafana
-ao CloudWatch e secret `GRAFANA_ADMIN_PASSWORD` nos GitHub Environments. O Alertmanager ainda não tem
-destinatários/canal configurados. Os PVCs locais e instâncias únicas atendem a uma demonstração, não
-alta disponibilidade.
-
-Decisões específicas do AWS Academy / Learner Lab: usa a role existente `LabRole` (cluster e nós), não cria IAM,
-usa subnets públicas da VPC padrão (sem NAT Gateway) e restringe o cluster às AZs `us-east-1a/b/c`
-(`us-east-1e` não suporta o control plane do EKS).
-
-```mermaid
-flowchart LR
-    DEV["Push / PR"] --> GH["GitHub Actions"]
-    GH -->|terraform apply| EKS
-    GH -->|state + lock| S3[("S3 backend")]
-    subgraph VPC["VPC padrão (us-east-1)"]
-        subgraph EKS["EKS oficina"]
-            NSH["namespace homolog"]
-            NSP["namespace production"]
-            MS["metrics-server"]
-            OBS["observability: Prometheus, Grafana, Loki, Tempo, Alloy"]
-        end
-        RDSH[("RDS oficina-homolog")]
-        RDSP[("RDS oficina-production")]
-    end
-    NSH --> RDSH
-    NSP --> RDSP
-    NSH --> OBS
-    NSP --> OBS
-    OBS --> CW["CloudWatch datasource"]
-    ECR["ECR oficina-app"] -->|imagem| EKS
-```
-
 ## API Gateway
 
 É a porta de entrada pública da API. O cliente chama o gateway, e as rotas públicas seguem sem identidade enquanto o restante passa pelo Lambda Authorizer antes do encaminhamento ao cluster:
