@@ -120,8 +120,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
-        run: terraform plan -input=false -lock-timeout=60s -no-color \
-          -var-file=/tmp/gateway.auto.tfvars.json -out=/tmp/infra.tfplan
+        run: terraform plan -input=false -lock-timeout=60s -no-color -var-file=/tmp/gateway.auto.tfvars.json -out=/tmp/infra.tfplan
 
       - name: Aplicar plano salvo
         env:
