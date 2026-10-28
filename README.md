@@ -41,42 +41,43 @@ configuração: a promoção entre branches funciona como esteira de aprovação
 | `aws_apigatewayv2_api` | `oficina-homolog` e `oficina-production`: HTTP API, uma por ambiente. |
 | `aws_apigatewayv2_stage` | Estágio `$default` com auto deploy, throttling e log de acesso em JSON. |
 | `aws_cloudwatch_log_group` | `/aws/apigateway/oficina-<ambiente>`, retenção de 7 dias. |
-| `aws_apigatewayv2_integration` + `aws_apigatewayv2_route` | Proxy `ANY /{proxy+}` para o Service da aplicação; só existe para o ambiente com endereço em `app_upstream_urls`. |
-
-Decisões específicas do AWS Academy / Learner Lab: usa a role existente `LabRole` (cluster e nós), não cria IAM,
-usa subnets públicas da VPC padrão (sem NAT Gateway) e restringe o cluster às AZs `us-east-1a/b/c`
-(`us-east-1e` não suporta o control plane do EKS).
-
-```mermaid
-flowchart LR
-    DEV["Push / PR"] --> GH["GitHub Actions"]
-    GH -->|terraform apply| EKS
-    GH -->|state + lock| S3[("S3 backend")]
-    subgraph VPC["VPC padrão (us-east-1)"]
-        subgraph EKS["EKS oficina"]
-            NSH["namespace homolog"]
-            NSP["namespace production"]
-            MS["metrics-server"]
-        end
-        RDSH[("RDS oficina-homolog")]
-        RDSP[("RDS oficina-production")]
-    end
-    NSH --> RDSH
-    NSP --> RDSP
-    ECR["ECR oficina-app"] -->|imagem| EKS
-```
+| `aws_apigatewayv2_integration` + rotas | Proxy HTTP para o Service, com rota curinga protegida e exceções públicas enumeradas por método e caminho. |
+| `aws_apigatewayv2_authorizer` + `aws_lambda_permission` | Authorizer Lambda `REQUEST` (payload 2.0, resposta simples, sem cache) e permissão de invocação por ambiente. |
 
 ## API Gateway
 
-É a porta de entrada pública da API. O cliente chama o gateway, e ele decide para onde cada rota vai:
+É a porta de entrada pública da API. O cliente chama o gateway, e as rotas públicas seguem sem identidade enquanto o restante passa pelo Lambda Authorizer antes do encaminhamento ao cluster:
 
 - `POST /v1/auth/customer` vai para a Lambda de autenticação por CPF, que emite o JWT. A rota é criada
   pelo repositório `oficina-lambda-auth`, que usa o id do gateway do seu ambiente (output `api_gateway_ids`).
-- Todo o resto (`ANY /{proxy+}`) vai para o Service da aplicação no cluster.
+- Sem Authorizer: `POST /v1/auth/login`, `POST /v1/worker/login`, links assinados de acompanhamento e decisão de orçamento e endpoints de health existentes.
+- Com Authorizer: `ANY /` e `ANY /{proxy+}`. O Quarkus continua aplicando RBAC e isolamento das OS do cliente.
+- OpenAPI e Swagger ficam privados por padrão. `public_api_docs_environments` permite habilitá-los apenas nos ambientes explicitamente escolhidos, usando caminhos listados no Terraform.
+- O proxy define `overwrite:path = $request.path` para preservar o caminho completo; query string, corpo e headers seguem pela integração HTTP proxy.
+- Os access logs usam `routeKey` (com parâmetros de rota mascarados) e não registram `$context.path`, que incluiria tokens assinados de acompanhamento ou orçamento.
 
-O endereço do Service é um ELB criado pelo Kubernetes, não pelo Terraform, então ele é informado em
-`terraform.tfvars` (`app_upstream_urls`). Um ambiente sem endereço ali fica com o gateway criado, mas sem
-o proxy. Para descobrir o endereço:
+O endereço do ELB e o ARN do Authorizer não são fixados no código. Os workflows consumidores publicam contratos sem segredos no bucket S3 usado pelo backend Terraform:
+
+```text
+oficina/config/v1/<homolog|production>/upstream.json
+oficina/config/v1/<homolog|production>/authorizer.json
+```
+
+O contrato `upstream.json` inclui `contract_version`, `account_id`, `region`, `environment`, `cluster_name`, `upstream_url` e `source_sha`. `authorizer.json` inclui os mesmos campos de contexto, `lambda_arn` e `source_sha`. Para o ambiente solicitado, os dois contratos são obrigatórios e o SHA do serviço que iniciou a chamada precisa coincidir. O par do outro ambiente é opcional somente quando o state confirma que ainda não há recursos de roteamento provisionados nele; se já houver recursos, os dois contratos são obrigatórios. Um par incompleto ou inválido interrompe o workflow. Recursos de rota, integração e Authorizer existentes também têm `prevent_destroy`, como proteção contra perda de state ou contrato.
+
+### Bootstrap e promoção entre ambientes
+
+1. Preserve o state existente e configure bucket, region e credenciais do Learner Lab nos GitHub Environments. Não remova recursos do state para contornar uma validação de contrato.
+2. Publique o Authorizer de homologação pela pipeline Lambda. Se o upstream ainda não existir, publique o contrato de Authorizer e deixe a integração marcada como pendente; não chame a reconciliação ainda.
+3. Implante a aplicação em homologação. Depois de readiness, publique `upstream.json`; com os dois contratos disponíveis, chame `reconcile.yml` para homologação.
+4. Produção pode permanecer sem contratos enquanto não tiver rotas no state. Promova banco, Lambda e aplicação para produção; a reconciliação de produção exige os dois contratos de produção.
+5. Se um ambiente já tiver qualquer recurso de roteamento no state, ausência do par de contratos desse ambiente bloqueia também as execuções do outro ambiente. Isso preserva o mapa completo sem presumir valores antigos.
+
+O workflow lê `terraform state list` antes de montar os mapas. Se o state mudar entre essa leitura e o plano, `prevent_destroy` bloqueia qualquer tentativa de remover Authorizer, integração ou rota protegida. O plano de reconciliação segue limitado aos recursos de roteamento do ambiente solicitado.
+
+O endereço do Service é um ELB criado pelo Kubernetes, não pelo Terraform. A aplicação descobre o
+hostname após readiness e publica `upstream.json`; não mantenha cópias desse hostname no repositório.
+Para conferência manual:
 
 ```shell
 kubectl get svc oficina-mecanica -n homolog -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
@@ -111,17 +112,20 @@ kubectl get nodes
 kubectl top nodes
 ```
 
-## Pipeline
+## Pipelines
 
 `.github/workflows/terraform.yml`:
 
-- **Pull Request**: `terraform fmt -check`, `validate` e `plan`.
-- **Push em `homolog` ou `production`**: `terraform apply` (execuções serializadas, pois compartilham o state).
+- **Pull Request**: `terraform fmt -check` e `validate`, sem credenciais AWS ou state remoto.
+- **Push ou execução manual em `homolog`/`production`**: lê o state, valida os contratos exigidos para os ambientes já provisionados, cria um plano salvo e aplica esse plano no state compartilhado. O workflow manual serve para recuperação após renovar as credenciais do Learner Lab.
+- `.github/workflows/reconcile.yml`: workflow reutilizável chamado pelos repositórios da aplicação e da Lambda. Lê os contratos obrigatórios do ambiente solicitado e preserva o par de outro ambiente quando já houver recursos no state; usa o lock S3 e bloqueia qualquer plano que altere EKS, ECR ou roteamento de ambiente não solicitado.
+
+O bucket `TF_STATE_BUCKET` precisa manter acesso restrito, criptografia e versionamento. Ele contém o state e os contratos `oficina/config/v1/`; os contratos não contêm secrets. Planos e state não são publicados como artifact ou summary. A concorrência do GitHub serializa este repositório, e o lock S3 coordena as execuções que vêm de outros repositórios.
 
 A criação do cluster leva cerca de 15 minutos.
 
 ## Próximos passos
 
 - `oficina-app`: Dockerfile, manifests (Deployment, Service `LoadBalancer` com NLB, HPA) e pipeline de push no ECR e deploy.
-- `oficina-lambda-auth`: Terraform e pipeline da Lambda, registrando `POST /v1/auth/customer` no gateway.
+- `oficina-lambda-auth`: Terraform e pipeline da Lambda, registrando `POST /v1/auth/customer` e publicando o contrato do Authorizer.
 - Decidir com o time se o cluster passa a ser privado (Ingress, ou NLB interno com VPC Link) em vez de expor o ELB.
