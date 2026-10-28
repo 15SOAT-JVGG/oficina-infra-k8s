@@ -136,8 +136,10 @@ jobs:
             --output /tmp/gateway.auto.tfvars.json
 
       - name: Criar plano isolado para o ambiente
-        run: terraform plan -input=false -lock-timeout=60s -no-color \
-          -var-file=/tmp/gateway.auto.tfvars.json -out=/tmp/gateway.tfplan
+        run: |
+          terraform plan -input=false -lock-timeout=60s -no-color \
+            -var-file=/tmp/gateway.auto.tfvars.json \
+            -out=/tmp/gateway.tfplan
 
       - name: Bloquear alterações fora do roteamento do ambiente
         env:
