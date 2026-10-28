@@ -5,9 +5,8 @@
 # O cluster é compartilhado e o state é único, então os dois gateways nascem juntos. Custa
 # praticamente nada manter o de production: o API Gateway cobra por requisição.
 #
-# A rota POST /v1/auth/customer, que leva à função de autenticação por CPF, não é criada aqui:
-# ela pertence ao repositório oficina-lambda-auth, que só precisa do id do gateway do ambiente
-# (output api_gateway_ids). O resto do tráfego segue para o cluster.
+# A rota POST /v1/auth/customer continua sob responsabilidade de oficina-lambda-auth. As rotas
+# encaminhadas ao cluster são divididas entre exceções públicas e o proxy autenticado.
 locals {
   environments = toset(["homolog", "production"])
 }
@@ -49,7 +48,6 @@ resource "aws_apigatewayv2_stage" "default" {
       ip                 = "$context.identity.sourceIp"
       httpMethod         = "$context.httpMethod"
       routeKey           = "$context.routeKey"
-      path               = "$context.path"
       status             = "$context.status"
       responseLength     = "$context.responseLength"
       latencyMs          = "$context.responseLatency"
@@ -61,13 +59,71 @@ resource "aws_apigatewayv2_stage" "default" {
   }
 }
 
-# O ELB nasce do Service do Kubernetes, não do Terraform, então o endereço só existe depois do
-# primeiro deploy da aplicação no ambiente. Ambiente sem endereço em app_upstream_urls fica sem o
-# proxy; preenchê-lo e aplicar de novo liga a rota.
+# O ELB e o Authorizer são publicados pelos repositórios consumidores como contratos no S3. O
+# workflow reutilizável os lê e injeta nos mapas; um endereço sem Authorizer é inválido.
 locals {
   upstream_urls = {
     for environment, url in var.app_upstream_urls : environment => trimsuffix(url, "/")
     if contains(local.environments, environment) && url != ""
+  }
+
+  authorizer_arns = {
+    for environment, arn in var.authorizer_arns : environment => arn
+    if contains(local.environments, environment) && arn != ""
+  }
+
+  public_route_keys = toset(flatten([
+    for environment in keys(local.upstream_urls) : [
+      for route_key in concat(
+        [
+          "POST /v1/auth/login",
+          "POST /v1/worker/login",
+          "GET /v1/public/work-orders/tracking/{token}",
+          "POST /v1/public/work-orders/estimate-decisions/{token}",
+          "GET /q/health",
+          "GET /q/health/live",
+          "GET /q/health/ready",
+        ],
+        contains(var.public_api_docs_environments, environment) ? [
+          "GET /q/openapi",
+          "GET /q/swagger-ui",
+          "GET /q/swagger-ui/",
+          "GET /q/swagger-ui/{proxy+}",
+        ] : []
+      ) : "${environment}|${route_key}"
+    ]
+  ]))
+}
+
+resource "aws_apigatewayv2_authorizer" "jwt" {
+  for_each = local.authorizer_arns
+
+  api_id                            = aws_apigatewayv2_api.main[each.key].id
+  name                              = "oficina-${each.key}-jwt"
+  authorizer_type                   = "REQUEST"
+  authorizer_uri                    = "arn:aws:apigateway:${var.aws_region}:lambda:path/2015-03-31/functions/${each.value}/invocations"
+  identity_sources                  = ["$request.header.Authorization"]
+  authorizer_payload_format_version = "2.0"
+  enable_simple_responses           = true
+  authorizer_result_ttl_in_seconds  = 0
+
+  # Ausência de contrato não pode remover um Authorizer já provisionado.
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "aws_lambda_permission" "gateway_authorizer" {
+  for_each = local.authorizer_arns
+
+  statement_id  = "AllowOficinaGateway-${each.key}"
+  action        = "lambda:InvokeFunction"
+  function_name = each.value
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.main[each.key].execution_arn}/*/*"
+
+  lifecycle {
+    prevent_destroy = true
   }
 }
 
@@ -77,17 +133,56 @@ resource "aws_apigatewayv2_integration" "cluster" {
   api_id             = aws_apigatewayv2_api.main[each.key].id
   integration_type   = "HTTP_PROXY"
   integration_method = "ANY"
-  integration_uri    = "${each.value}/{proxy}"
+  integration_uri    = each.value
+  request_parameters = {
+    "overwrite:path" = "$request.path"
+  }
 
   # O cluster responde em até 29s, o teto do HTTP API; acima disso o gateway devolve 504 antes da
   # aplicação, e o access log registra integrationError.
   timeout_milliseconds = 29000
+
+  # Remover o contrato não pode desconectar um ambiente que já tinha upstream.
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "aws_apigatewayv2_route" "cluster" {
   for_each = local.upstream_urls
 
-  api_id    = aws_apigatewayv2_api.main[each.key].id
-  route_key = "ANY /{proxy+}"
-  target    = "integrations/${aws_apigatewayv2_integration.cluster[each.key].id}"
+  api_id             = aws_apigatewayv2_api.main[each.key].id
+  route_key          = "ANY /{proxy+}"
+  target             = "integrations/${aws_apigatewayv2_integration.cluster[each.key].id}"
+  authorization_type = "CUSTOM"
+  authorizer_id      = aws_apigatewayv2_authorizer.jwt[each.key].id
+  depends_on         = [aws_lambda_permission.gateway_authorizer]
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "aws_apigatewayv2_route" "root" {
+  for_each = local.upstream_urls
+
+  api_id             = aws_apigatewayv2_api.main[each.key].id
+  route_key          = "ANY /"
+  target             = "integrations/${aws_apigatewayv2_integration.cluster[each.key].id}"
+  authorization_type = "CUSTOM"
+  authorizer_id      = aws_apigatewayv2_authorizer.jwt[each.key].id
+  depends_on         = [aws_lambda_permission.gateway_authorizer]
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "aws_apigatewayv2_route" "public" {
+  for_each = local.public_route_keys
+
+  api_id             = aws_apigatewayv2_api.main[split("|", each.key)[0]].id
+  route_key          = split("|", each.key)[1]
+  target             = "integrations/${aws_apigatewayv2_integration.cluster[split("|", each.key)[0]].id}"
+  authorization_type = "NONE"
 }

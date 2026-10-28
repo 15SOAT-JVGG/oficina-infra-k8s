@@ -1,0 +1,178 @@
+name: Reconcile API Gateway
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: AWS/GitHub environment being reconciled.
+        required: true
+        type: string
+      source_kind:
+        description: Which published contract triggered reconciliation.
+        required: true
+        type: string
+      source_sha:
+        description: Full commit SHA recorded by the triggering contract.
+        required: true
+        type: string
+      infra_ref:
+        description: Full commit SHA of this reusable workflow's repository revision.
+        required: true
+        type: string
+      aws_region:
+        description: AWS region shared by the Gateway and contracts.
+        required: true
+        type: string
+      tf_state_bucket:
+        description: Existing bucket that stores the shared Terraform state.
+        required: true
+        type: string
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+      AWS_SESSION_TOKEN:
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: oficina-api-gateway-reconcile
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    name: Reconcile ${{ inputs.environment }}
+    if: inputs.environment == 'homolog' || inputs.environment == 'production'
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+      AWS_REGION: ${{ inputs.aws_region }}
+      TF_STATE_BUCKET: ${{ inputs.tf_state_bucket }}
+      TF_IN_AUTOMATION: "true"
+      TF_VAR_aws_region: ${{ inputs.aws_region }}
+    steps:
+      # github context points to the caller workflow, so the caller passes the same full SHA used
+      # in jobs.<id>.uses below. This keeps checkout aligned with the reusable workflow revision.
+      - name: Checkout infraestrutura
+        uses: actions/checkout@v4
+        with:
+          repository: 15SOAT-JVGG/oficina-infra-k8s
+          ref: ${{ inputs.infra_ref }}
+
+      - name: Validar entrada
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
+          SOURCE_KIND: ${{ inputs.source_kind }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+          INFRA_REF: ${{ inputs.infra_ref }}
+        run: |
+          [[ "$ENVIRONMENT" == "homolog" || "$ENVIRONMENT" == "production" ]]
+          [[ "$SOURCE_KIND" == "app" || "$SOURCE_KIND" == "lambda" ]]
+          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$INFRA_REF" =~ ^[0-9a-f]{40}$ ]]
+          [[ -n "$AWS_REGION" && -n "$TF_STATE_BUCKET" ]]
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.10.5
+          terraform_wrapper: false
+
+      - name: Terraform init (state compartilhado)
+        run: |
+          terraform init -input=false \
+            -backend-config="bucket=${TF_STATE_BUCKET}" \
+            -backend-config="key=oficina-infra-k8s/terraform.tfstate" \
+            -backend-config="region=${AWS_REGION}" \
+            -backend-config="use_lockfile=true"
+          if ! terraform state list > /tmp/gateway-state-resources.txt 2>/tmp/terraform-state-list-error; then
+            if grep -q 'No state file was found' /tmp/terraform-state-list-error; then
+              : > /tmp/gateway-state-resources.txt
+            else
+              cat /tmp/terraform-state-list-error >&2
+              exit 1
+            fi
+          fi
+
+      - name: Identidade AWS e contratos versionados
+        id: contracts
+        env:
+          CONTRACT_ENVIRONMENT: ${{ inputs.environment }}
+          CONTRACT_SOURCE_KIND: ${{ inputs.source_kind }}
+          CONTRACT_SOURCE_SHA: ${{ inputs.source_sha }}
+          CONTRACT_REGION: ${{ inputs.aws_region }}
+        run: |
+          account_id="$(aws sts get-caller-identity --query Account --output text)"
+          mkdir -p /tmp/oficina-gateway-contracts
+          for environment in homolog production; do
+            mkdir -p "/tmp/oficina-gateway-contracts/$environment"
+            for contract in upstream authorizer; do
+              key="oficina/config/v1/${environment}/${contract}.json"
+              if aws s3api head-object --bucket "$TF_STATE_BUCKET" --key "$key" \
+                >/dev/null 2>/tmp/contract-head-error; then
+                aws s3 cp "s3://${TF_STATE_BUCKET}/${key}" \
+                  "/tmp/oficina-gateway-contracts/${environment}/${contract}.json" --only-show-errors
+              elif grep -Eq '404|Not Found|NoSuchKey' /tmp/contract-head-error; then
+                continue
+              else
+                cat /tmp/contract-head-error >&2
+                exit 1
+              fi
+            done
+          done
+          python3 scripts/contracts-to-tfvars.py \
+            --contracts-dir /tmp/oficina-gateway-contracts \
+            --account-id "$account_id" \
+            --region "$CONTRACT_REGION" \
+            --environment "$CONTRACT_ENVIRONMENT" \
+            --source-kind "$CONTRACT_SOURCE_KIND" \
+            --source-sha "$CONTRACT_SOURCE_SHA" \
+            --state-resources-file /tmp/gateway-state-resources.txt \
+            --output /tmp/gateway.auto.tfvars.json
+
+      - name: Criar plano isolado para o ambiente
+        run: terraform plan -input=false -lock-timeout=60s -no-color \
+          -var-file=/tmp/gateway.auto.tfvars.json -out=/tmp/gateway.tfplan
+
+      - name: Bloquear alterações fora do roteamento do ambiente
+        env:
+          TARGET_ENVIRONMENT: ${{ inputs.environment }}
+        run: |
+          terraform show -json /tmp/gateway.tfplan > /tmp/gateway-plan.json
+          python3 - <<'PY'
+          import json
+          import os
+          import sys
+
+          environment = os.environ["TARGET_ENVIRONMENT"]
+          plan = json.load(open("/tmp/gateway-plan.json", encoding="utf-8"))
+          allowed = {
+              f'aws_apigatewayv2_integration.cluster["{environment}"]',
+              f'aws_apigatewayv2_route.cluster["{environment}"]',
+              f'aws_apigatewayv2_route.root["{environment}"]',
+              f'aws_apigatewayv2_authorizer.jwt["{environment}"]',
+              f'aws_lambda_permission.gateway_authorizer["{environment}"]',
+          }
+          invalid = []
+          for change in plan.get("resource_changes", []):
+              address = change["address"]
+              actions = change["change"]["actions"]
+              if actions == ["no-op"]:
+                  continue
+              if address.startswith(f'aws_apigatewayv2_route.public["{environment}|'):
+                  continue
+              if address not in allowed:
+                  invalid.append(f"{address}: {','.join(actions)}")
+          if invalid:
+              print("Plano recusado: alteração fora do roteamento do ambiente solicitado:", file=sys.stderr)
+              print("\n".join(invalid), file=sys.stderr)
+              raise SystemExit(1)
+          PY
+
+      - name: Aplicar plano revisado
+        run: terraform apply -input=false -auto-approve /tmp/gateway.tfplan
