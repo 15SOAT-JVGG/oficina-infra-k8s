@@ -43,15 +43,25 @@ resource "aws_eks_cluster" "main" {
   }
 }
 
+resource "aws_launch_template" "nodes" {
+  name_prefix = "${var.cluster_name}-nodes-"
+  user_data   = base64encode(file("${path.module}/scripts/node-user-data.mime"))
+}
+
 resource "aws_eks_node_group" "main" {
-  cluster_name    = aws_eks_cluster.main.name
-  node_group_name = "${var.cluster_name}-nodes"
-  node_role_arn   = data.aws_iam_role.lab.arn
-  subnet_ids      = data.aws_subnets.cluster.ids
+  cluster_name           = aws_eks_cluster.main.name
+  node_group_name_prefix = "${var.cluster_name}-nodes-"
+  node_role_arn          = data.aws_iam_role.lab.arn
+  subnet_ids             = data.aws_subnets.cluster.ids
 
   instance_types = var.node_instance_types
   ami_type       = "AL2023_x86_64_STANDARD"
   capacity_type  = "ON_DEMAND"
+
+  launch_template {
+    id      = aws_launch_template.nodes.id
+    version = aws_launch_template.nodes.latest_version
+  }
 
   scaling_config {
     min_size     = var.node_min_size
@@ -65,7 +75,8 @@ resource "aws_eks_node_group" "main" {
 
   # O HPA da aplicação cria pods; o número de nós só muda por este recurso.
   lifecycle {
-    ignore_changes = [scaling_config[0].desired_size]
+    create_before_destroy = true
+    ignore_changes        = [scaling_config[0].desired_size]
   }
 }
 
