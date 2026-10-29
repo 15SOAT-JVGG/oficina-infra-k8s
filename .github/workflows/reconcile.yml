@@ -34,11 +34,17 @@ on:
         default: oficina-api
     secrets:
       AWS_ACCESS_KEY_ID:
-        required: true
+        required: false
       AWS_SECRET_ACCESS_KEY:
-        required: true
+        required: false
       AWS_SESSION_TOKEN:
-        required: true
+        required: false
+      HOMOLOG_AWS_ACCESS_KEY_ID:
+        required: false
+      HOMOLOG_AWS_SECRET_ACCESS_KEY:
+        required: false
+      HOMOLOG_AWS_SESSION_TOKEN:
+        required: false
       AUTHORIZER_TEST_CUSTOMER_CPF:
         required: false
 
@@ -58,9 +64,9 @@ jobs:
     outputs:
       gateway_url: ${{ steps.gateway-url.outputs.url }}
     env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+      AWS_ACCESS_KEY_ID: ${{ inputs.environment == 'homolog' && secrets.HOMOLOG_AWS_ACCESS_KEY_ID || inputs.environment == 'production' && secrets.AWS_ACCESS_KEY_ID || '' }}
+      AWS_SECRET_ACCESS_KEY: ${{ inputs.environment == 'homolog' && secrets.HOMOLOG_AWS_SECRET_ACCESS_KEY || inputs.environment == 'production' && secrets.AWS_SECRET_ACCESS_KEY || '' }}
+      AWS_SESSION_TOKEN: ${{ inputs.environment == 'homolog' && secrets.HOMOLOG_AWS_SESSION_TOKEN || inputs.environment == 'production' && secrets.AWS_SESSION_TOKEN || '' }}
       AWS_REGION: ${{ inputs.aws_region }}
       TF_STATE_BUCKET: ${{ inputs.tf_state_bucket }}
       TF_IN_AUTOMATION: "true"
