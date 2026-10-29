@@ -27,6 +27,11 @@ on:
         description: Existing bucket that stores the shared Terraform state.
         required: true
         type: string
+      jwt_issuer:
+        description: Expected JWT issuer configured in the application and both token issuers.
+        required: false
+        type: string
+        default: oficina-api
     secrets:
       AWS_ACCESS_KEY_ID:
         required: true
@@ -34,6 +39,8 @@ on:
         required: true
       AWS_SESSION_TOKEN:
         required: true
+      AUTHORIZER_TEST_CUSTOMER_CPF:
+        required: false
 
 permissions:
   contents: read
@@ -48,6 +55,8 @@ jobs:
     if: inputs.environment == 'homolog' || inputs.environment == 'production'
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
+    outputs:
+      gateway_url: ${{ steps.gateway-url.outputs.url }}
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -175,3 +184,40 @@ jobs:
 
       - name: Aplicar plano revisado
         run: terraform apply -input=false -auto-approve /tmp/gateway.tfplan
+
+      - name: Resolve URL atual do Gateway
+        id: gateway-url
+        env:
+          TARGET_ENVIRONMENT: ${{ inputs.environment }}
+        run: |
+          gateway_url="$(terraform output -json | jq -er --arg environment "$TARGET_ENVIRONMENT" \
+            '.api_gateway_urls.value[$environment] | select(type == "string" and length > 0)')"
+          echo "url=$gateway_url" >> "$GITHUB_OUTPUT"
+
+  authorizer-integration:
+    name: Authorizer pelo Gateway (${{ inputs.environment }})
+    needs: reconcile
+    if: inputs.environment == 'homolog' && needs.reconcile.result == 'success'
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    env:
+      AUTHORIZER_TEST_CUSTOMER_CPF: ${{ secrets.AUTHORIZER_TEST_CUSTOMER_CPF }}
+      JWT_ISSUER: ${{ inputs.jwt_issuer }}
+      GATEWAY_URL: ${{ needs.reconcile.outputs.gateway_url }}
+    steps:
+      - name: Checkout infraestrutura
+        uses: actions/checkout@v4
+        with:
+          repository: 15SOAT-JVGG/oficina-infra-k8s
+          ref: ${{ inputs.infra_ref }}
+
+      - name: Validar fixture de homologação
+        run: |
+          [[ -n "$GATEWAY_URL" ]] || { echo "URL do Gateway ausente após reconciliação." >&2; exit 1; }
+          [[ "$AUTHORIZER_TEST_CUSTOMER_CPF" =~ ^[0-9]{11}$ ]] || {
+            echo "Configure o secret AUTHORIZER_TEST_CUSTOMER_CPF com o CPF de uma conta CUSTOMER sintética e ativa." >&2
+            exit 1
+          }
+
+      - name: Testar rotas públicas, Authorizer e RBAC
+        run: scripts/api-gateway-authorizer-smoke-test.sh "$GATEWAY_URL"

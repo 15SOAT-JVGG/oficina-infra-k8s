@@ -65,6 +65,8 @@ oficina/config/v1/<homolog|production>/authorizer.json
 
 O contrato `upstream.json` inclui `contract_version`, `account_id`, `region`, `environment`, `cluster_name`, `upstream_url` e `source_sha`. `authorizer.json` inclui os mesmos campos de contexto, `lambda_arn` e `source_sha`. Para o ambiente solicitado, os dois contratos são obrigatórios e o SHA do serviço que iniciou a chamada precisa coincidir. O par do outro ambiente é opcional somente quando o state confirma que ainda não há recursos de roteamento provisionados nele; se já houver recursos, os dois contratos são obrigatórios. Um par incompleto ou inválido interrompe o workflow. Recursos de rota, integração e Authorizer existentes também têm `prevent_destroy`, como proteção contra perda de state ou contrato.
 
+Após a reconciliação em `homolog`, o workflow reutilizável executa `scripts/api-gateway-authorizer-smoke-test.sh` contra a URL atual do Gateway. Nos Environments `homolog` dos repositórios que chamam esse workflow (`oficina-lambda-auth` e `oficina-app`), configure o secret `AUTHORIZER_TEST_CUSTOMER_CPF` com um cliente sintético e ativo. O teste não imprime CPF nem JWT; o resumo registra somente cenário, código HTTP e request ID. Esse cliente deve permanecer ativo para as execuções seguintes.
+
 ### Bootstrap e promoção entre ambientes
 
 1. Preserve o state existente e configure bucket, region e credenciais do Learner Lab nos GitHub Environments. Não remova recursos do state para contornar uma validação de contrato.
