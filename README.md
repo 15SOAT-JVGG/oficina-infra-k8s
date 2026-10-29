@@ -69,7 +69,7 @@ Após a reconciliação em `homolog`, o workflow reutilizável executa `scripts/
 
 ### Bootstrap e promoção entre ambientes
 
-1. Preserve o state existente e configure bucket, region e credenciais do Learner Lab nos GitHub Environments. Não remova recursos do state para contornar uma validação de contrato.
+1. Preserve o state existente. `AWS_REGION` e `TF_STATE_BUCKET` vêm das variables da Organization; homolog usa os secrets Organization `HOMOLOG_AWS_*`, restritos aos quatro repositórios, e production mantém `AWS_*` no Environment. Não remova recursos do state para contornar uma validação de contrato.
 2. Publique o Authorizer de homologação pela pipeline Lambda. Se o upstream ainda não existir, publique o contrato de Authorizer e deixe a integração marcada como pendente; não chame a reconciliação ainda.
 3. Implante a aplicação em homologação. Depois de readiness, publique `upstream.json`; com os dois contratos disponíveis, chame `reconcile.yml` para homologação.
 4. Produção pode permanecer sem contratos enquanto não tiver rotas no state. Promova banco, Lambda e aplicação para produção; a reconciliação de produção exige os dois contratos de produção.
@@ -91,8 +91,8 @@ As URLs públicas saem dos outputs `api_gateway_urls`.
 
 Os mesmos do `oficina-infra-db`:
 
-- Bucket S3 do state e variável `TF_STATE_BUCKET`; variável `AWS_REGION`.
-- Secrets `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` e `AWS_SESSION_TOKEN` (Learner Lab, expiram em ~4h).
+- Bucket S3 do state; variables Organization `TF_STATE_BUCKET` e `AWS_REGION` (podem ser sobrescritas por variables de Environment).
+- Secrets Organization `HOMOLOG_AWS_ACCESS_KEY_ID`, `HOMOLOG_AWS_SECRET_ACCESS_KEY` e `HOMOLOG_AWS_SESSION_TOKEN`, restritos aos quatro repositórios; production mantém `AWS_*` no Environment.
 
 ## Execução local
 
