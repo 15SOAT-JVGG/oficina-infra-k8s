@@ -4,6 +4,8 @@ Infraestrutura Kubernetes da **Oficina Mecânica** (FIAP 16SOAT — Tech Challen
 Terraform: cluster **Amazon EKS** com node group escalável, **ECR** para a imagem da aplicação e **metrics-server**
 para o HPA, e um **API Gateway** por ambiente como porta de entrada da API.
 
+Operação, recuperação e histórico do Learner Lab: [docs/LEARNER-LAB-OPERACAO.md](docs/LEARNER-LAB-OPERACAO.md).
+
 ## Tecnologias
 
 - Terraform `>= 1.10` e provider AWS `~> 5.80`
@@ -120,7 +122,7 @@ kubectl top nodes
 - **Push ou execução manual em `homolog`/`production`**: lê o state, valida os contratos exigidos para os ambientes já provisionados, cria um plano salvo e aplica esse plano no state compartilhado. O workflow manual serve para recuperação após renovar as credenciais do Learner Lab.
 - `.github/workflows/reconcile.yml`: workflow reutilizável chamado pelos repositórios da aplicação e da Lambda. Lê os contratos obrigatórios do ambiente solicitado e preserva o par de outro ambiente quando já houver recursos no state; usa o lock S3 e bloqueia qualquer plano que altere EKS, ECR ou roteamento de ambiente não solicitado.
 
-O bucket `TF_STATE_BUCKET` precisa manter acesso restrito, criptografia e versionamento. Ele contém o state e os contratos `oficina/config/v1/`; os contratos não contêm secrets. Planos e state não são publicados como artifact ou summary. A concorrência do GitHub serializa este repositório, e o lock S3 coordena as execuções que vêm de outros repositórios.
+O bucket `TF_STATE_BUCKET` precisa manter acesso restrito, criptografia e versionamento. Ele contém o state e os contratos `oficina/config/v1/`; os contratos não contêm secrets. Planos e state não são publicados como artifact ou summary. A concorrência do GitHub é limitada ao repositório chamador. O lock S3 coordena as operações Terraform; a rotina de convergência espera pelo lock, valida novamente os contratos e recalcula planos desatualizados. Isso não torna os contratos S3 e o state uma transação atômica.
 
 A criação do cluster leva cerca de 15 minutos.
 
