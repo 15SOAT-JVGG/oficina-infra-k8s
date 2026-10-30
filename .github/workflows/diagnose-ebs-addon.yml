@@ -58,18 +58,20 @@ jobs:
           aws iam list-attached-role-policies --role-name LabRole \
             --query 'AttachedPolicies[].PolicyName' --output json
           aws iam list-role-policies --role-name LabRole --query 'PolicyNames' --output json
-          aws iam get-role --role-name LabRole \
-            --query 'Role.{name:RoleName,trust:AssumeRolePolicyDocument,permissionsBoundary:PermissionsBoundary.PermissionsBoundaryArn}' \
-            --output json
-          aws iam get-role --role-name voclabs \
-            --query 'Role.{name:RoleName,trust:AssumeRolePolicyDocument,permissionsBoundary:PermissionsBoundary.PermissionsBoundaryArn}' \
-            --output json
-          aws iam list-attached-role-policies --role-name voclabs \
-            --query 'AttachedPolicies[].PolicyName' --output json
-          aws iam list-open-id-connect-providers --query 'OpenIDConnectProviderList[].Arn' --output json
+          if trust_doc="$(aws iam get-role --role-name LabRole --query 'Role.AssumeRolePolicyDocument' --output json 2>/dev/null)"; then
+            jq '[.Statement[] | {effect:.Effect,actions:.Action,
+                trustsPodIdentity:((.Principal.Service // [] | if type == "array" then . else [.] end)
+                  | any(. == "pods.eks.amazonaws.com")),
+                federatedPrincipal:(.Principal.Federated // null)}]' <<<"$trust_doc"
+          else
+            echo 'Trust policy do LabRole indisponível para leitura.'
+          fi
+          if ! aws iam list-open-id-connect-providers --query 'OpenIDConnectProviderList[].Arn' --output json 2>/dev/null; then
+            echo 'Provedores OIDC do IAM indisponíveis para leitura.'
+          fi
           if ! aws iam get-role --role-name AmazonEKS_EBS_CSI_DriverRole \
             --query 'Role.{name:RoleName,arn:Arn,trust:AssumeRolePolicyDocument}' \
-            --output json; then
+            --output json 2>/dev/null; then
             echo 'Role dedicada AmazonEKS_EBS_CSI_DriverRole não existe ou não está visível.'
           fi
           aws eks list-pod-identity-associations --cluster-name oficina \
