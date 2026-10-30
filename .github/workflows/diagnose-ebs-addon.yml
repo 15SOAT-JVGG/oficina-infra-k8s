@@ -1,0 +1,108 @@
+name: Diagnose EBS CSI add-on
+
+on:
+  push:
+    branches: [codex/diag-ebs-addon]
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  diagnose:
+    name: Read-only EKS and EBS CSI diagnostics
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: homolog
+    permissions: {}
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.HOMOLOG_AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.HOMOLOG_AWS_SECRET_ACCESS_KEY }}
+      AWS_SESSION_TOKEN: ${{ secrets.HOMOLOG_AWS_SESSION_TOKEN }}
+      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+      AWS_DEFAULT_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+
+    steps:
+      - name: Validate session and inspect managed add-on
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +x
+          [[ -n "$AWS_ACCESS_KEY_ID" && -n "$AWS_SECRET_ACCESS_KEY" && -n "$AWS_SESSION_TOKEN" ]] \
+            || { echo 'Secrets AWS da homologação ausentes.' >&2; exit 1; }
+
+          account_id="$(aws sts get-caller-identity --query Account --output text)"
+          [[ "$account_id" == '630266487412' ]] \
+            || { echo 'A identidade AWS não corresponde à conta esperada da homologação; diagnóstico interrompido.' >&2; exit 1; }
+          echo 'Identidade AWS validada para a conta homologação.'
+
+          aws eks describe-cluster --name oficina \
+            --query 'cluster.{status:status,version:version,endpointAccess:resourcesVpcConfig.{public:endpointPublicAccess,private:endpointPrivateAccess}}' \
+            --output json
+
+          if ! aws eks describe-addon --cluster-name oficina --addon-name aws-ebs-csi-driver \
+            --query 'addon.{status:status,version:addonVersion,serviceAccountRole:serviceAccountRoleArn,healthIssues:health.issues,createdAt:createdAt,modifiedAt:modifiedAt}' \
+            --output json; then
+            echo 'Não foi possível descrever o add-on EBS CSI.' >&2
+          fi
+
+          if nodegroups="$(aws eks list-nodegroups --cluster-name oficina --query 'nodegroups[]' --output text)"; then
+            for nodegroup in $nodegroups; do
+              aws eks describe-nodegroup --cluster-name oficina --nodegroup-name "$nodegroup" \
+                --query 'nodegroup.{name:nodegroupName,status:status,nodeRole:nodeRole,healthIssues:health.issues}' \
+                --output json
+            done
+          else
+            echo 'Não foi possível listar os node groups do cluster.' >&2
+          fi
+
+          aws iam list-attached-role-policies --role-name LabRole \
+            --query 'AttachedPolicies[].PolicyName' --output json
+          aws iam list-role-policies --role-name LabRole --query 'PolicyNames' --output json
+
+      - name: Inspect CSI pods, driver and recent events
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +x
+          if ! command -v kubectl >/dev/null 2>&1; then
+            version='v1.34.0'
+            binary="$RUNNER_TEMP/kubectl"
+            curl --fail --silent --show-error --location \
+              "https://dl.k8s.io/release/${version}/bin/linux/amd64/kubectl" --output "$binary"
+            curl --fail --silent --show-error --location \
+              "https://dl.k8s.io/release/${version}/bin/linux/amd64/kubectl.sha256" \
+              --output "$RUNNER_TEMP/kubectl.sha256"
+            printf '%s  %s\n' "$(cat "$RUNNER_TEMP/kubectl.sha256")" "$binary" | sha256sum --check
+            chmod 0755 "$binary"
+            export PATH="$RUNNER_TEMP:$PATH"
+          fi
+
+          aws eks update-kubeconfig --name oficina --region "$AWS_REGION" >/dev/null
+          diagnostic_errors=0
+          if pods_json="$(kubectl get pods --namespace kube-system --output json)"; then
+            jq -r '.items[] | select(.metadata.name | test("ebs-csi"; "i")) |
+                {name:.metadata.name,phase:.status.phase,node:.spec.nodeName,
+                 containers:[.status.containerStatuses[]? | {name:.name,ready:.ready,restarts:.restartCount,state:.state}]}' \
+              <<<"$pods_json"
+          else
+            echo 'Não foi possível consultar os pods do namespace kube-system.' >&2
+            diagnostic_errors=1
+          fi
+
+          if csidriver_json="$(kubectl get csidriver ebs.csi.aws.com --output json 2>/dev/null)"; then
+            jq '{name:.metadata.name,attachRequired:.spec.attachRequired,podInfoOnMount:.spec.podInfoOnMount}' \
+              <<<"$csidriver_json"
+          else
+            echo 'O recurso CSIDriver ebs.csi.aws.com não existe ou não pôde ser consultado.' >&2
+            diagnostic_errors=1
+          fi
+
+          if events_json="$(kubectl get events --namespace kube-system --output json)"; then
+            jq -r '.items[] | select((.involvedObject.name // "") | test("ebs-csi"; "i")) |
+                [.lastTimestamp // .eventTime // .metadata.creationTimestamp,
+                 .type,.reason,.involvedObject.name,.message] | @tsv' <<<"$events_json"
+          else
+            echo 'Não foi possível consultar os eventos do namespace kube-system.' >&2
+            diagnostic_errors=1
+          fi
+          exit "$diagnostic_errors"
