@@ -51,6 +51,7 @@ grafana:
   persistence:
     enabled: true
     size: 2Gi
+    storageClassName: gp3
   grafana.ini:
     server:
       root_url: "%(protocol)s://%(domain)s/observability/"
@@ -152,6 +153,7 @@ prometheus:
     storageSpec:
       volumeClaimTemplate:
         spec:
+          storageClassName: gp3
           accessModes: [ReadWriteOnce]
           resources:
             requests:

@@ -40,6 +40,8 @@ diagnose_observability_failure() {
 }
 trap diagnose_observability_failure ERR
 
+kubectl apply --filename "$observability_dir/storage/gp3.yaml"
+
 # Install Prometheus Operator first because later app/rule manifests use its CRDs.
 helm upgrade --install oficina-monitoring prometheus-community/kube-prometheus-stack \
   --version "$KUBE_PROMETHEUS_STACK_VERSION" \

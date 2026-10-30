@@ -19,5 +19,6 @@ tempo:
 persistence:
   enabled: true
   size: 4Gi
+  storageClassName: gp3
 service:
   type: ClusterIP
