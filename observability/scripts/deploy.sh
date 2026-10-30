@@ -24,6 +24,22 @@ helm repo add grafana-community https://grafana-community.github.io/helm-charts 
 helm repo add grafana https://grafana.github.io/helm-charts --force-update
 helm repo update
 
+# A Helm timeout otherwise hides whether the operator, Grafana, Prometheus, or
+# storage is preventing the release from becoming ready. Keep failure diagnostics
+# read-only and limited to workload status and events; never print Secret data.
+diagnose_observability_failure() {
+  local exit_code=$?
+  trap - ERR
+  echo "Observability deployment failed; collecting workload diagnostics." >&2
+  helm list --namespace observability --output table || true
+  kubectl get pods,deployments,statefulsets,daemonsets,services,persistentvolumeclaims \
+    --namespace observability --output wide || true
+  kubectl get events --namespace observability \
+    --sort-by=.metadata.creationTimestamp | tail -n 40 || true
+  exit "$exit_code"
+}
+trap diagnose_observability_failure ERR
+
 # Install Prometheus Operator first because later app/rule manifests use its CRDs.
 helm upgrade --install oficina-monitoring prometheus-community/kube-prometheus-stack \
   --version "$KUBE_PROMETHEUS_STACK_VERSION" \
