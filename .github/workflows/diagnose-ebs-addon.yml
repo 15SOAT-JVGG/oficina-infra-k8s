@@ -69,6 +69,20 @@ jobs:
           if ! aws iam list-open-id-connect-providers --query 'OpenIDConnectProviderList[].Arn' --output json 2>/dev/null; then
             echo 'Provedores OIDC do IAM indisponíveis para leitura.'
           fi
+          caller_arn="$(aws sts get-caller-identity --query Arn --output text)"
+          if [[ "$caller_arn" =~ :assumed-role/([^/]+)/ ]]; then
+            caller_role_arn="arn:aws:iam::${account_id}:role/${BASH_REMATCH[1]}"
+            if permissions="$(aws iam simulate-principal-policy \
+              --policy-source-arn "$caller_role_arn" \
+              --action-names iam:CreateRole iam:AttachRolePolicy iam:PassRole \
+                iam:CreateOpenIDConnectProvider eks:CreatePodIdentityAssociation eks:CreateAddon \
+              --query 'EvaluationResults[].{action:EvalActionName,decision:EvalDecision}' \
+              --output json 2>/dev/null)"; then
+              jq '.' <<<"$permissions"
+            else
+              echo 'Simulação de permissões IAM indisponível para o perfil do Lab.'
+            fi
+          fi
           if ! aws iam get-role --role-name AmazonEKS_EBS_CSI_DriverRole \
             --query 'Role.{name:RoleName,arn:Arn,trust:AssumeRolePolicyDocument}' \
             --output json 2>/dev/null; then
