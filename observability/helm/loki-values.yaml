@@ -27,6 +27,7 @@ singleBinary:
   persistence:
     enabled: true
     size: 8Gi
+    storageClass: gp3
   resources:
     requests:
       cpu: 200m

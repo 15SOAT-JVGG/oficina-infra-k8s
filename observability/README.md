@@ -27,8 +27,10 @@ considerado acessível somente pelo Prometheus até essa validação.
 
 Os tamanhos e réplicas são uma configuração inicial, não um sizing aprovado. O cluster usa nós
 `t3.medium`; medir requests/limits e PVCs em homologação antes de confiar na retenção ou alertas.
-StorageClass default, EBS CSI e permissões do Learner Lab precisam estar disponíveis. Sem PVC bound,
-os pods de Prometheus/Loki/Tempo não ficarão prontos. Loki local é um modo simples de demonstração,
+O add-on EBS CSI e as permissões EC2 do role dos nós (LabRole no Learner Lab) precisam estar
+disponíveis. O deploy cria uma StorageClass `gp3` criptografada e referencia explicitamente essa
+classe nos PVCs, sem torná-la padrão para outros workloads. Sem PVC bound, os pods de Grafana,
+Prometheus/Loki/Tempo não ficarão prontos. Loki local é um modo simples de demonstração,
 sem alta disponibilidade e sem backup durável fora do PVC. Migração para S3 requer provisionamento e
 IAM revisados, fora deste apply Helm.
 
