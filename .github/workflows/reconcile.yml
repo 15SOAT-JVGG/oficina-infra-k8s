@@ -88,7 +88,7 @@ jobs:
           INFRA_REF: ${{ inputs.infra_ref }}
         run: |
           [[ "$ENVIRONMENT" == "homolog" || "$ENVIRONMENT" == "production" ]]
-          [[ "$SOURCE_KIND" == "app" || "$SOURCE_KIND" == "lambda" ]]
+          [[ "$SOURCE_KIND" == "app" || "$SOURCE_KIND" == "lambda" || "$SOURCE_KIND" == "observability" ]]
           [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
           [[ "$INFRA_REF" =~ ^[0-9a-f]{40}$ ]]
           [[ -n "$AWS_REGION" && -n "$TF_STATE_BUCKET" ]]
@@ -126,7 +126,7 @@ jobs:
           mkdir -p /tmp/oficina-gateway-contracts
           for environment in homolog production; do
             mkdir -p "/tmp/oficina-gateway-contracts/$environment"
-            for contract in upstream authorizer; do
+            for contract in upstream authorizer grafana; do
               key="oficina/config/v1/${environment}/${contract}.json"
               if aws s3api head-object --bucket "$TF_STATE_BUCKET" --key "$key" \
                 >/dev/null 2>/tmp/contract-head-error; then
@@ -167,6 +167,7 @@ jobs:
           plan = json.load(open("/tmp/gateway-plan.json", encoding="utf-8"))
           allowed = {
               f'aws_apigatewayv2_integration.cluster["{environment}"]',
+              f'aws_apigatewayv2_integration.grafana["{environment}"]',
               f'aws_apigatewayv2_route.cluster["{environment}"]',
               f'aws_apigatewayv2_route.root["{environment}"]',
               f'aws_apigatewayv2_authorizer.jwt["{environment}"]',
@@ -179,6 +180,8 @@ jobs:
               if actions == ["no-op"]:
                   continue
               if address.startswith(f'aws_apigatewayv2_route.public["{environment}|'):
+                  continue
+              if address.startswith(f'aws_apigatewayv2_route.grafana["{environment}|'):
                   continue
               if address not in allowed:
                   invalid.append(f"{address}: {','.join(actions)}")
@@ -218,6 +221,7 @@ jobs:
           ref: ${{ inputs.infra_ref }}
 
       - name: Validar fixture de homologação
+        if: inputs.source_kind != 'observability'
         run: |
           [[ -n "$GATEWAY_URL" ]] || { echo "URL do Gateway ausente após reconciliação." >&2; exit 1; }
           [[ "$AUTHORIZER_TEST_CUSTOMER_CPF" =~ ^[0-9]{11}$ ]] || {
@@ -226,4 +230,16 @@ jobs:
           }
 
       - name: Testar rotas públicas, Authorizer e RBAC
+        if: inputs.source_kind != 'observability'
         run: scripts/api-gateway-authorizer-smoke-test.sh "$GATEWAY_URL"
+
+      - name: Verificar tela de login pública do Grafana
+        if: inputs.source_kind == 'observability'
+        run: |
+          status="$(curl --silent --show-error --location --max-redirs 5 --max-time 30 \
+            --output /tmp/grafana-login.html --write-out '%{http_code}' \
+            "$GATEWAY_URL/observability/login")"
+          [[ "$status" == "200" ]] || {
+            echo "Login do Grafana retornou HTTP $status pelo API Gateway." >&2
+            exit 1
+          }

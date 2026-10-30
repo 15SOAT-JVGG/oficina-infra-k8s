@@ -8,6 +8,11 @@
 # A rota POST /v1/auth/customer continua sob responsabilidade de oficina-lambda-auth. As rotas
 # encaminhadas ao cluster são divididas entre exceções públicas e o proxy autenticado.
 locals {
+  upstream_urls = {
+    for environment, url in var.app_upstream_urls : environment => trimsuffix(url, "/")
+    if contains(local.environments, environment) && url != ""
+  }
+
   environments = toset(["homolog", "production"])
 }
 
@@ -59,16 +64,21 @@ resource "aws_apigatewayv2_stage" "default" {
   }
 }
 
-# O ELB e o Authorizer são publicados pelos repositórios consumidores como contratos no S3. O
-# workflow reutilizável os lê e injeta nos mapas; um endereço sem Authorizer é inválido.
+# Os listeners NLB internos e o Authorizer são publicados como contratos no S3. O workflow
+# reutilizável os injeta nos mapas; um upstream sem Authorizer é inválido.
 locals {
-  upstream_urls = {
-    for environment, url in var.app_upstream_urls : environment => trimsuffix(url, "/")
-    if contains(local.environments, environment) && url != ""
+  upstream_listener_arns = {
+    for environment, arn in var.app_upstream_listener_arns : environment => arn
+    if contains(local.environments, environment) && arn != ""
   }
 
   authorizer_arns = {
     for environment, arn in var.authorizer_arns : environment => arn
+    if contains(local.environments, environment) && arn != ""
+  }
+
+  grafana_listener_arns = {
+    for environment, arn in var.grafana_listener_arns : environment => arn
     if contains(local.environments, environment) && arn != ""
   }
 
@@ -91,6 +101,13 @@ locals {
           "GET /q/swagger-ui/{proxy+}",
         ] : []
       ) : "${environment}|${route_key}"
+    ]
+  ]))
+
+  grafana_route_keys = toset(flatten([
+    for environment in keys(local.grafana_listener_arns) : [
+      "${environment}|ANY /observability",
+      "${environment}|ANY /observability/{proxy+}",
     ]
   ]))
 }
@@ -133,7 +150,9 @@ resource "aws_apigatewayv2_integration" "cluster" {
   api_id             = aws_apigatewayv2_api.main[each.key].id
   integration_type   = "HTTP_PROXY"
   integration_method = "ANY"
-  integration_uri    = each.value
+  integration_uri    = lookup(local.upstream_listener_arns, each.key, each.value)
+  connection_type    = contains(keys(local.upstream_listener_arns), each.key) ? "VPC_LINK" : "INTERNET"
+  connection_id      = contains(keys(local.upstream_listener_arns), each.key) ? aws_apigatewayv2_vpc_link.cluster.id : null
   request_parameters = {
     "overwrite:path" = "$request.path"
   }
@@ -184,5 +203,34 @@ resource "aws_apigatewayv2_route" "public" {
   api_id             = aws_apigatewayv2_api.main[split("|", each.key)[0]].id
   route_key          = split("|", each.key)[1]
   target             = "integrations/${aws_apigatewayv2_integration.cluster[split("|", each.key)[0]].id}"
+  authorization_type = "NONE"
+}
+
+resource "aws_apigatewayv2_integration" "grafana" {
+  for_each = local.grafana_listener_arns
+
+  api_id             = aws_apigatewayv2_api.main[each.key].id
+  integration_type   = "HTTP_PROXY"
+  integration_method = "ANY"
+  integration_uri    = each.value
+  connection_type    = "VPC_LINK"
+  connection_id      = aws_apigatewayv2_vpc_link.cluster.id
+  request_parameters = {
+    "overwrite:path" = "$request.path"
+  }
+
+  timeout_milliseconds = 29000
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "aws_apigatewayv2_route" "grafana" {
+  for_each = local.grafana_route_keys
+
+  api_id             = aws_apigatewayv2_api.main[split("|", each.key)[0]].id
+  route_key          = split("|", each.key)[1]
+  target             = "integrations/${aws_apigatewayv2_integration.grafana[split("|", each.key)[0]].id}"
   authorization_type = "NONE"
 }

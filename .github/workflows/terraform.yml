@@ -91,7 +91,7 @@ jobs:
           mkdir -p /tmp/oficina-gateway-contracts
           for environment in homolog production; do
             mkdir -p "/tmp/oficina-gateway-contracts/$environment"
-            for contract in upstream authorizer; do
+            for contract in upstream authorizer grafana; do
               key="oficina/config/v1/${environment}/${contract}.json"
               if aws s3api head-object --bucket "$TF_STATE_BUCKET" --key "$key" \
                 >/dev/null 2>/tmp/contract-head-error; then

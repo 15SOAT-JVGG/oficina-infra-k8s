@@ -1,0 +1,23 @@
+replicas: 1
+tempo:
+  reportingEnabled: false
+  retention: 24h
+  storage:
+    trace:
+      backend: local
+      local:
+        path: /var/tempo/traces
+      wal:
+        path: /var/tempo/wal
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 768Mi
+persistence:
+  enabled: true
+  size: 4Gi
+service:
+  type: ClusterIP
