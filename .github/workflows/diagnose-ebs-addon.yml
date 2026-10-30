@@ -36,7 +36,7 @@ jobs:
           echo 'Identidade AWS validada para a conta homologação.'
 
           aws eks describe-cluster --name oficina \
-            --query 'cluster.{status:status,version:version,endpointAccess:resourcesVpcConfig.{public:endpointPublicAccess,private:endpointPrivateAccess}}' \
+            --query 'cluster.{status:status,version:version,oidcIssuer:identity.oidc.issuer,endpointAccess:resourcesVpcConfig.{public:endpointPublicAccess,private:endpointPrivateAccess}}' \
             --output json
 
           if ! aws eks describe-addon --cluster-name oficina --addon-name aws-ebs-csi-driver \
@@ -58,6 +58,21 @@ jobs:
           aws iam list-attached-role-policies --role-name LabRole \
             --query 'AttachedPolicies[].PolicyName' --output json
           aws iam list-role-policies --role-name LabRole --query 'PolicyNames' --output json
+          aws iam get-role --role-name LabRole \
+            --query 'Role.{name:RoleName,trust:AssumeRolePolicyDocument,permissionsBoundary:PermissionsBoundary.PermissionsBoundaryArn}' \
+            --output json
+          if ! aws iam get-role --role-name AmazonEKS_EBS_CSI_DriverRole \
+            --query 'Role.{name:RoleName,arn:Arn,trust:AssumeRolePolicyDocument}' \
+            --output json; then
+            echo 'Role dedicada AmazonEKS_EBS_CSI_DriverRole não existe ou não está visível.'
+          fi
+          aws eks list-pod-identity-associations --cluster-name oficina \
+            --namespace kube-system --service-account ebs-csi-controller-sa \
+            --query 'associations[].{associationId:associationId,roleArn:roleArn,namespace:namespace,serviceAccount:serviceAccount}' \
+            --output json
+          aws eks describe-addon-configuration --addon-name aws-ebs-csi-driver \
+            --addon-version v1.67.2-eksbuild.1 \
+            --query 'podIdentityConfiguration' --output json
 
       - name: Inspect CSI pods, driver and recent events
         shell: bash
