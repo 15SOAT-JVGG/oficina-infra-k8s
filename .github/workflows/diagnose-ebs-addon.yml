@@ -61,6 +61,12 @@ jobs:
           aws iam get-role --role-name LabRole \
             --query 'Role.{name:RoleName,trust:AssumeRolePolicyDocument,permissionsBoundary:PermissionsBoundary.PermissionsBoundaryArn}' \
             --output json
+          aws iam get-role --role-name voclabs \
+            --query 'Role.{name:RoleName,trust:AssumeRolePolicyDocument,permissionsBoundary:PermissionsBoundary.PermissionsBoundaryArn}' \
+            --output json
+          aws iam list-attached-role-policies --role-name voclabs \
+            --query 'AttachedPolicies[].PolicyName' --output json
+          aws iam list-open-id-connect-providers --query 'OpenIDConnectProviderList[].Arn' --output json
           if ! aws iam get-role --role-name AmazonEKS_EBS_CSI_DriverRole \
             --query 'Role.{name:RoleName,arn:Arn,trust:AssumeRolePolicyDocument}' \
             --output json; then
@@ -70,6 +76,7 @@ jobs:
             --namespace kube-system --service-account ebs-csi-controller-sa \
             --query 'associations[].{associationId:associationId,roleArn:roleArn,namespace:namespace,serviceAccount:serviceAccount}' \
             --output json
+          aws eks list-addons --cluster-name oficina --query 'addons[]' --output json
           aws eks describe-addon-configuration --addon-name aws-ebs-csi-driver \
             --addon-version v1.67.2-eksbuild.1 \
             --query 'podIdentityConfiguration' --output json
@@ -95,7 +102,7 @@ jobs:
           aws eks update-kubeconfig --name oficina --region "$AWS_REGION" >/dev/null
           diagnostic_errors=0
           if pods_json="$(kubectl get pods --namespace kube-system --output json)"; then
-            jq -r '.items[] | select(.metadata.name | test("ebs-csi"; "i")) |
+            jq -r '.items[] | select(.metadata.name | test("ebs-csi|pod-identity"; "i")) |
                 {name:.metadata.name,phase:.status.phase,node:.spec.nodeName,
                  containers:[.status.containerStatuses[]? | {name:.name,ready:.ready,restarts:.restartCount,state:.state}]}' \
               <<<"$pods_json"
