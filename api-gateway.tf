@@ -97,7 +97,6 @@ locals {
         contains(var.public_api_docs_environments, environment) ? [
           "GET /q/openapi",
           "GET /q/swagger-ui",
-          "GET /q/swagger-ui/",
           "GET /q/swagger-ui/{proxy+}",
         ] : []
       ) : "${environment}|${route_key}"
