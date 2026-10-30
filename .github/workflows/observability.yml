@@ -1,0 +1,105 @@
+name: Apply observability stack
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_environment:
+        description: GitHub environment whose AWS credentials will access the shared EKS cluster
+        required: true
+        type: choice
+        options: [homolog]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: oficina-observability-cluster
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    if: github.ref_name == inputs.target_environment
+    environment: ${{ inputs.target_environment }}
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+      AWS_ACCESS_KEY_ID: ${{ inputs.target_environment == 'homolog' && secrets.HOMOLOG_AWS_ACCESS_KEY_ID || inputs.target_environment == 'production' && secrets.AWS_ACCESS_KEY_ID || '' }}
+      AWS_SECRET_ACCESS_KEY: ${{ inputs.target_environment == 'homolog' && secrets.HOMOLOG_AWS_SECRET_ACCESS_KEY || inputs.target_environment == 'production' && secrets.AWS_SECRET_ACCESS_KEY || '' }}
+      AWS_SESSION_TOKEN: ${{ inputs.target_environment == 'homolog' && secrets.HOMOLOG_AWS_SESSION_TOKEN || inputs.target_environment == 'production' && secrets.AWS_SESSION_TOKEN || '' }}
+      GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
+      TF_IN_AUTOMATION: "true"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.17.3
+
+      - name: Validate environment credentials without printing values
+        run: |
+          [[ -n "$AWS_ACCESS_KEY_ID" && -n "$AWS_SECRET_ACCESS_KEY" && -n "$AWS_SESSION_TOKEN" ]]
+          [[ -n "$GRAFANA_ADMIN_PASSWORD" ]]
+          aws sts get-caller-identity --query Account --output text >/dev/null
+
+      - name: Install or upgrade the shared observability stack
+        run: observability/scripts/deploy.sh
+
+      - name: Publish internal Grafana listener contract
+        env:
+          TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+        run: |
+          [[ -n "$TF_STATE_BUCKET" ]] || { echo "TF_STATE_BUCKET ausente." >&2; exit 1; }
+          hostname=""
+          for attempt in $(seq 1 60); do
+            hostname="$(kubectl get svc oficina-monitoring-grafana --namespace observability \
+              -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || true)"
+            [[ -n "$hostname" ]] && break
+            sleep 10
+          done
+          [[ -n "$hostname" ]] || { echo "NLB interno do Grafana não recebeu hostname." >&2; exit 1; }
+
+          listener_arn=""
+          for attempt in $(seq 1 60); do
+            load_balancer_arn="$(aws elbv2 describe-load-balancers \
+              --query "LoadBalancers[?DNSName=='${hostname}'].LoadBalancerArn | [0]" --output text 2>/dev/null || true)"
+            if [[ "$load_balancer_arn" =~ ^arn: ]]; then
+              listener_arn="$(aws elbv2 describe-listeners --load-balancer-arn "$load_balancer_arn" \
+                --query 'Listeners[?Port==`80`].ListenerArn | [0]' --output text 2>/dev/null || true)"
+              if [[ "$listener_arn" =~ ^arn: ]]; then
+                target_group_arn="$(aws elbv2 describe-target-groups --load-balancer-arn "$load_balancer_arn" \
+                  --query 'TargetGroups[0].TargetGroupArn' --output text 2>/dev/null || true)"
+                healthy_targets="$(aws elbv2 describe-target-health --target-group-arn "$target_group_arn" \
+                  --query 'length(TargetHealthDescriptions[?TargetHealth.State==`healthy`])' --output text 2>/dev/null || true)"
+                [[ "$healthy_targets" =~ ^[1-9][0-9]*$ ]] && break
+              fi
+            fi
+            sleep 10
+          done
+          [[ "$listener_arn" =~ ^arn: ]] && [[ "${healthy_targets:-0}" =~ ^[1-9][0-9]*$ ]] || {
+            echo "Listener do Grafana sem target NLB saudável após 10 minutos." >&2
+            exit 1
+          }
+
+          account_id="$(aws sts get-caller-identity --query Account --output text)"
+          contract="$(jq -n \
+            --arg account_id "$account_id" --arg region "$AWS_REGION" \
+            --arg environment homolog --arg cluster_name oficina \
+            --arg listener_arn "$listener_arn" --arg source_sha "$GITHUB_SHA" \
+            '{contract_version:1,account_id:$account_id,region:$region,environment:$environment,cluster_name:$cluster_name,listener_arn:$listener_arn,source_sha:$source_sha}')"
+          printf '%s\n' "$contract" > "$RUNNER_TEMP/grafana.json"
+          aws s3 cp "$RUNNER_TEMP/grafana.json" \
+            "s3://$TF_STATE_BUCKET/oficina/config/v1/homolog/grafana.json" \
+            --content-type application/json --only-show-errors
+
+  reconcile_gateway:
+    name: Publish Grafana route through the API Gateway
+    needs: apply
+    uses: ./.github/workflows/reconcile.yml
+    with:
+      environment: homolog
+      source_kind: observability
+      source_sha: ${{ github.sha }}
+      infra_ref: ${{ github.sha }}
+      aws_region: ${{ vars.AWS_REGION || 'us-east-1' }}
+      tf_state_bucket: ${{ vars.TF_STATE_BUCKET }}
+    secrets: inherit

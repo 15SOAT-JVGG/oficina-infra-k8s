@@ -7,7 +7,7 @@ mode="${1:?expected infra or reconcile}"
 [[ "$CONTRACT_ENVIRONMENT" == homolog || "$CONTRACT_ENVIRONMENT" == production ]] || exit 2
 [[ "$CONTRACT_SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]] || exit 2
 [[ "$mode" != infra || "$CONTRACT_SOURCE_KIND" == infra ]] || exit 2
-[[ "$mode" != reconcile || "$CONTRACT_SOURCE_KIND" == app || "$CONTRACT_SOURCE_KIND" == lambda ]] || exit 2
+[[ "$mode" != reconcile || "$CONTRACT_SOURCE_KIND" == app || "$CONTRACT_SOURCE_KIND" == lambda || "$CONTRACT_SOURCE_KIND" == observability ]] || exit 2
 umask 077
 workdir=$(mktemp -d)
 trap 'rm -rf "$workdir"' EXIT
@@ -17,7 +17,7 @@ read_contracts() {
   mkdir -p "$target"
   for env in homolog production; do
     mkdir -p "$target/$env"
-    for kind in upstream authorizer; do
+    for kind in upstream authorizer grafana; do
       key="oficina/config/v1/$env/$kind.json"
       if aws s3api head-object --bucket "$TF_STATE_BUCKET" --key "$key" > /dev/null 2>"$workdir/head.err"; then
         aws s3 cp "s3://$TF_STATE_BUCKET/$key" "$target/$env/$kind.json" --only-show-errors

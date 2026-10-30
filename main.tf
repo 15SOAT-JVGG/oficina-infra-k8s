@@ -18,6 +18,13 @@ data "aws_subnets" "cluster" {
     values = [data.aws_vpc.default.id]
   }
 
+  # As sub-redes privadas criadas para o VPC Link não podem mudar o conjunto já usado
+  # pelo EKS/node group nem provocar a substituição do cluster.
+  filter {
+    name   = "map-public-ip-on-launch"
+    values = ["true"]
+  }
+
   filter {
     name   = "availability-zone"
     values = var.availability_zones

@@ -7,6 +7,7 @@ import sys
 def validate(plan, environment):
     allowed = {
         f'aws_apigatewayv2_integration.cluster["{environment}"]',
+        f'aws_apigatewayv2_integration.grafana["{environment}"]',
         f'aws_apigatewayv2_route.cluster["{environment}"]',
         f'aws_apigatewayv2_route.root["{environment}"]',
         f'aws_apigatewayv2_authorizer.jwt["{environment}"]',
@@ -19,6 +20,8 @@ def validate(plan, environment):
         if actions == ["no-op"]:
             continue
         if address.startswith(f'aws_apigatewayv2_route.public["{environment}|'):
+            continue
+        if address.startswith(f'aws_apigatewayv2_route.grafana["{environment}|'):
             continue
         if address not in allowed:
             invalid.append(f"{address}: {','.join(actions)}")

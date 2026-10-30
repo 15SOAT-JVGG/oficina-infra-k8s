@@ -35,7 +35,7 @@ jobs:
       - name: terraform validate
         run: terraform validate
 
-      - name: Testar reconciliação segura
+      - name: Testar convergência segura
         run: python3 -m unittest discover -s tests -v
 
   apply:
@@ -60,9 +60,9 @@ jobs:
 
       - name: Terraform init (state compartilhado)
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+          AWS_ACCESS_KEY_ID: ${{ github.ref_name == 'homolog' && secrets.HOMOLOG_AWS_ACCESS_KEY_ID || github.ref_name == 'production' && secrets.AWS_ACCESS_KEY_ID || '' }}
+          AWS_SECRET_ACCESS_KEY: ${{ github.ref_name == 'homolog' && secrets.HOMOLOG_AWS_SECRET_ACCESS_KEY || github.ref_name == 'production' && secrets.AWS_SECRET_ACCESS_KEY || '' }}
+          AWS_SESSION_TOKEN: ${{ github.ref_name == 'homolog' && secrets.HOMOLOG_AWS_SESSION_TOKEN || github.ref_name == 'production' && secrets.AWS_SESSION_TOKEN || '' }}
           TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
         run: |
           [[ -n "$TF_STATE_BUCKET" ]] || { echo "Variable TF_STATE_BUCKET ausente" >&2; exit 1; }
@@ -71,12 +71,20 @@ jobs:
             -backend-config="key=oficina-infra-k8s/terraform.tfstate" \
             -backend-config="region=${AWS_REGION}" \
             -backend-config="use_lockfile=true"
+          if ! terraform state list > /tmp/gateway-state-resources.txt 2>/tmp/terraform-state-list-error; then
+            if grep -q 'No state file was found' /tmp/terraform-state-list-error; then
+              : > /tmp/gateway-state-resources.txt
+            else
+              cat /tmp/terraform-state-list-error >&2
+              exit 1
+            fi
+          fi
 
-      - name: Validar contratos e convergir infraestrutura
+      - name: Reconciliar state compartilhado com contratos atuais
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+          AWS_ACCESS_KEY_ID: ${{ github.ref_name == 'homolog' && secrets.HOMOLOG_AWS_ACCESS_KEY_ID || github.ref_name == 'production' && secrets.AWS_ACCESS_KEY_ID || '' }}
+          AWS_SECRET_ACCESS_KEY: ${{ github.ref_name == 'homolog' && secrets.HOMOLOG_AWS_SECRET_ACCESS_KEY || github.ref_name == 'production' && secrets.AWS_SECRET_ACCESS_KEY || '' }}
+          AWS_SESSION_TOKEN: ${{ github.ref_name == 'homolog' && secrets.HOMOLOG_AWS_SESSION_TOKEN || github.ref_name == 'production' && secrets.AWS_SESSION_TOKEN || '' }}
           TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
           CONTRACT_ENVIRONMENT: ${{ github.ref_name }}
           CONTRACT_SOURCE_KIND: infra

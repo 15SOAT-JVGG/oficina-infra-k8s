@@ -59,13 +59,21 @@ class ConvergeTests(unittest.TestCase):
         d = self.root / "objects/oficina/config/v1/homolog"
         d.mkdir(parents=True)
         common = {"contract_version": 1, "account_id": "123456789012", "region": "us-east-1", "environment": "homolog", "cluster_name": "oficina", "source_sha": SHA}
-        (d / "upstream.json").write_text(json.dumps({**common, "upstream_url": "http://old.example"}))
+        (d / "upstream.json").write_text(json.dumps({
+            **common,
+            "upstream_url": "http://old.example",
+            "integration_listener_arn": "arn:aws:elasticloadbalancing:us-east-1:123456789012:listener/net/app/abc/def",
+        }))
         (d / "authorizer.json").write_text(json.dumps({**common, "lambda_arn": "arn:aws:lambda:us-east-1:123456789012:function:auth:1"}))
+        (d / "grafana.json").write_text(json.dumps({
+            **common,
+            "listener_arn": "arn:aws:elasticloadbalancing:us-east-1:123456789012:listener/net/grafana/abc/def",
+        }))
         self.env = {**os.environ, "PATH": f"{bindir}:{os.environ['PATH']}", "FAKE_ROOT": str(self.root), "TF_STATE_BUCKET": "bucket", "AWS_REGION": "us-east-1", "CONTRACT_ENVIRONMENT": "homolog", "CONTRACT_SOURCE_KIND": "infra", "CONTRACT_SOURCE_SHA": SHA}
 
-    def run_script(self, mode="infra", **flags):
+    def run_script(self, mode="infra", source_kind=None, **flags):
         env = {**self.env, **flags}
-        if mode == "reconcile": env["CONTRACT_SOURCE_KIND"] = "app"
+        if mode == "reconcile": env["CONTRACT_SOURCE_KIND"] = source_kind or "app"
         return subprocess.run(["bash", "scripts/terraform-converge.sh", mode], cwd=ROOT, env=env, capture_output=True, text=True)
 
     def count(self, name):
@@ -91,6 +99,11 @@ class ConvergeTests(unittest.TestCase):
         result = self.run_script("reconcile", FORBID="1")
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(self.count("applies"), 0)
+
+    def test_observability_contract_reconciles_grafana_route(self):
+        result = self.run_script("reconcile", source_kind="observability")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual((self.count("plans"), self.count("applies")), (1, 1))
 
     def test_contract_changed_during_apply_is_reconciled_again(self):
         result = self.run_script(CHANGE_DURING_APPLY="1")

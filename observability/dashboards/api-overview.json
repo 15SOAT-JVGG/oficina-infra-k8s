@@ -1,0 +1,80 @@
+{
+  "annotations": {"list": []},
+  "editable": false,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [],
+  "panels": [
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "reqps"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "id": 1,
+      "options": {"legend": {"calcs": [], "displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "multi"}},
+      "targets": [{"expr": "sum by (uri, method) (rate(http_server_requests_seconds_count{job=\"oficina-mecanica-management\",namespace=\"$namespace\"}[5m]))", "legendFormat": "{{method}} {{uri}}", "refId": "A"}],
+      "title": "Taxa de requisições por rota",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "percent", "min": 0, "max": 100}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "id": 2,
+      "options": {"legend": {"displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "single"}},
+      "targets": [{"expr": "100 * sum(rate(http_server_requests_seconds_count{job=\"oficina-mecanica-management\",namespace=\"$namespace\",status=~\"5..\"}[5m])) / clamp_min(sum(rate(http_server_requests_seconds_count{job=\"oficina-mecanica-management\",namespace=\"$namespace\"}[5m])), 1e-9)", "legendFormat": "5xx", "refId": "A"}],
+      "title": "Respostas HTTP 5xx (%)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+      "id": 3,
+      "options": {"legend": {"calcs": [], "displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "multi"}},
+      "targets": [{"expr": "histogram_quantile(0.95, sum by (le, uri, method) (rate(http_server_requests_seconds_bucket{job=\"oficina-mecanica-management\",namespace=\"$namespace\"}[5m])))", "legendFormat": "{{method}} {{uri}}", "refId": "A"}],
+      "title": "Latência p95 por rota",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "bytes"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+      "id": 4,
+      "options": {"legend": {"calcs": [], "displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "multi"}},
+      "targets": [{"expr": "sum by (id) (jvm_memory_used_bytes{job=\"oficina-mecanica-management\",namespace=\"$namespace\",area=\"heap\"})", "legendFormat": "{{id}}", "refId": "A"}],
+      "title": "Memória heap JVM",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "bytes"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+      "id": 5,
+      "options": {"legend": {"calcs": [], "displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "multi"}},
+      "targets": [{"expr": "sum by (id) (jvm_memory_max_bytes{job=\"oficina-mecanica-management\",namespace=\"$namespace\",area=\"heap\"})", "legendFormat": "{{id}}", "refId": "A"}],
+      "title": "Limite de memória heap JVM",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {"type": "prometheus", "uid": "prometheus"},
+      "fieldConfig": {"defaults": {"unit": "s"}, "overrides": []},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+      "id": 6,
+      "options": {"legend": {"calcs": [], "displayMode": "list", "placement": "bottom"}, "tooltip": {"mode": "multi"}},
+      "targets": [{"expr": "sum by (cause) (rate(jvm_gc_pause_seconds_count{job=\"oficina-mecanica-management\",namespace=\"$namespace\"}[5m]))", "legendFormat": "{{cause}}", "refId": "A"}],
+      "title": "Pausas de GC por segundo",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["oficina", "api", "jvm"],
+  "templating": {
+    "list": [{"current": {"selected": true, "text": "homolog", "value": "homolog"}, "hide": 0, "includeAll": false, "label": "Ambiente", "name": "namespace", "options": [{"selected": true, "text": "homolog", "value": "homolog"}, {"selected": false, "text": "production", "value": "production"}], "query": "homolog,production", "type": "custom"}]
+  },
+  "time": {"from": "now-6h", "to": "now"},
+  "timezone": "browser",
+  "title": "Oficina API e JVM",
+  "uid": "oficina-api-jvm",
+  "version": 1
+}

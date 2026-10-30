@@ -27,13 +27,26 @@ on:
         description: Existing bucket that stores the shared Terraform state.
         required: true
         type: string
+      jwt_issuer:
+        description: Expected JWT issuer configured in the application and both token issuers.
+        required: false
+        type: string
+        default: oficina-api
     secrets:
       AWS_ACCESS_KEY_ID:
-        required: true
+        required: false
       AWS_SECRET_ACCESS_KEY:
-        required: true
+        required: false
       AWS_SESSION_TOKEN:
-        required: true
+        required: false
+      HOMOLOG_AWS_ACCESS_KEY_ID:
+        required: false
+      HOMOLOG_AWS_SECRET_ACCESS_KEY:
+        required: false
+      HOMOLOG_AWS_SESSION_TOKEN:
+        required: false
+      AUTHORIZER_TEST_CUSTOMER_CPF:
+        required: false
 
 permissions:
   contents: read
@@ -48,10 +61,12 @@ jobs:
     if: inputs.environment == 'homolog' || inputs.environment == 'production'
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
+    outputs:
+      gateway_url: ${{ steps.gateway-url.outputs.url }}
     env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+      AWS_ACCESS_KEY_ID: ${{ inputs.environment == 'homolog' && secrets.HOMOLOG_AWS_ACCESS_KEY_ID || inputs.environment == 'production' && secrets.AWS_ACCESS_KEY_ID || '' }}
+      AWS_SECRET_ACCESS_KEY: ${{ inputs.environment == 'homolog' && secrets.HOMOLOG_AWS_SECRET_ACCESS_KEY || inputs.environment == 'production' && secrets.AWS_SECRET_ACCESS_KEY || '' }}
+      AWS_SESSION_TOKEN: ${{ inputs.environment == 'homolog' && secrets.HOMOLOG_AWS_SESSION_TOKEN || inputs.environment == 'production' && secrets.AWS_SESSION_TOKEN || '' }}
       AWS_REGION: ${{ inputs.aws_region }}
       TF_STATE_BUCKET: ${{ inputs.tf_state_bucket }}
       TF_IN_AUTOMATION: "true"
@@ -73,7 +88,7 @@ jobs:
           INFRA_REF: ${{ inputs.infra_ref }}
         run: |
           [[ "$ENVIRONMENT" == "homolog" || "$ENVIRONMENT" == "production" ]]
-          [[ "$SOURCE_KIND" == "app" || "$SOURCE_KIND" == "lambda" ]]
+          [[ "$SOURCE_KIND" == "app" || "$SOURCE_KIND" == "lambda" || "$SOURCE_KIND" == "observability" ]]
           [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
           [[ "$INFRA_REF" =~ ^[0-9a-f]{40}$ ]]
           [[ -n "$AWS_REGION" && -n "$TF_STATE_BUCKET" ]]
@@ -90,10 +105,68 @@ jobs:
             -backend-config="key=oficina-infra-k8s/terraform.tfstate" \
             -backend-config="region=${AWS_REGION}" \
             -backend-config="use_lockfile=true"
+          if ! terraform state list > /tmp/gateway-state-resources.txt 2>/tmp/terraform-state-list-error; then
+            if grep -q 'No state file was found' /tmp/terraform-state-list-error; then
+              : > /tmp/gateway-state-resources.txt
+            else
+              cat /tmp/terraform-state-list-error >&2
+              exit 1
+            fi
+          fi
 
-      - name: Validar contratos e reconciliar gateway
+      - name: Reconciliar state e contratos com retry seguro
         env:
           CONTRACT_ENVIRONMENT: ${{ inputs.environment }}
           CONTRACT_SOURCE_KIND: ${{ inputs.source_kind }}
           CONTRACT_SOURCE_SHA: ${{ inputs.source_sha }}
         run: bash scripts/terraform-converge.sh reconcile
+
+      - name: Resolve URL atual do Gateway
+        id: gateway-url
+        env:
+          TARGET_ENVIRONMENT: ${{ inputs.environment }}
+        run: |
+          gateway_url="$(terraform output -json | jq -er --arg environment "$TARGET_ENVIRONMENT" \
+            '.api_gateway_urls.value[$environment] | select(type == "string" and length > 0)')"
+          echo "url=$gateway_url" >> "$GITHUB_OUTPUT"
+
+  authorizer-integration:
+    name: Authorizer pelo Gateway (${{ inputs.environment }})
+    needs: reconcile
+    if: inputs.environment == 'homolog' && needs.reconcile.result == 'success'
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    env:
+      AUTHORIZER_TEST_CUSTOMER_CPF: ${{ secrets.AUTHORIZER_TEST_CUSTOMER_CPF }}
+      JWT_ISSUER: ${{ inputs.jwt_issuer }}
+      GATEWAY_URL: ${{ needs.reconcile.outputs.gateway_url }}
+    steps:
+      - name: Checkout infraestrutura
+        uses: actions/checkout@v4
+        with:
+          repository: 15SOAT-JVGG/oficina-infra-k8s
+          ref: ${{ inputs.infra_ref }}
+
+      - name: Validar fixture de homologação
+        if: inputs.source_kind != 'observability'
+        run: |
+          [[ -n "$GATEWAY_URL" ]] || { echo "URL do Gateway ausente após reconciliação." >&2; exit 1; }
+          [[ "$AUTHORIZER_TEST_CUSTOMER_CPF" =~ ^[0-9]{11}$ ]] || {
+            echo "Configure o secret AUTHORIZER_TEST_CUSTOMER_CPF com o CPF de uma conta CUSTOMER sintética e ativa." >&2
+            exit 1
+          }
+
+      - name: Testar rotas públicas, Authorizer e RBAC
+        if: inputs.source_kind != 'observability'
+        run: scripts/api-gateway-authorizer-smoke-test.sh "$GATEWAY_URL"
+
+      - name: Verificar tela de login pública do Grafana
+        if: inputs.source_kind == 'observability'
+        run: |
+          status="$(curl --silent --show-error --location --max-redirs 5 --max-time 30 \
+            --output /tmp/grafana-login.html --write-out '%{http_code}' \
+            "$GATEWAY_URL/observability/login")"
+          [[ "$status" == "200" ]] || {
+            echo "Login do Grafana retornou HTTP $status pelo API Gateway." >&2
+            exit 1
+          }
