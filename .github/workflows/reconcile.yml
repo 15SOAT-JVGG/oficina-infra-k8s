@@ -114,85 +114,12 @@ jobs:
             fi
           fi
 
-      - name: Identidade AWS e contratos versionados
-        id: contracts
+      - name: Reconciliar state e contratos com retry seguro
         env:
           CONTRACT_ENVIRONMENT: ${{ inputs.environment }}
           CONTRACT_SOURCE_KIND: ${{ inputs.source_kind }}
           CONTRACT_SOURCE_SHA: ${{ inputs.source_sha }}
-          CONTRACT_REGION: ${{ inputs.aws_region }}
-        run: |
-          account_id="$(aws sts get-caller-identity --query Account --output text)"
-          mkdir -p /tmp/oficina-gateway-contracts
-          for environment in homolog production; do
-            mkdir -p "/tmp/oficina-gateway-contracts/$environment"
-            for contract in upstream authorizer grafana; do
-              key="oficina/config/v1/${environment}/${contract}.json"
-              if aws s3api head-object --bucket "$TF_STATE_BUCKET" --key "$key" \
-                >/dev/null 2>/tmp/contract-head-error; then
-                aws s3 cp "s3://${TF_STATE_BUCKET}/${key}" \
-                  "/tmp/oficina-gateway-contracts/${environment}/${contract}.json" --only-show-errors
-              elif grep -Eq '404|Not Found|NoSuchKey' /tmp/contract-head-error; then
-                continue
-              else
-                cat /tmp/contract-head-error >&2
-                exit 1
-              fi
-            done
-          done
-          python3 scripts/contracts-to-tfvars.py \
-            --contracts-dir /tmp/oficina-gateway-contracts \
-            --account-id "$account_id" \
-            --region "$CONTRACT_REGION" \
-            --environment "$CONTRACT_ENVIRONMENT" \
-            --source-kind "$CONTRACT_SOURCE_KIND" \
-            --source-sha "$CONTRACT_SOURCE_SHA" \
-            --state-resources-file /tmp/gateway-state-resources.txt \
-            --output /tmp/gateway.auto.tfvars.json
-
-      - name: Criar plano isolado para o ambiente
-        run: terraform plan -input=false -lock-timeout=60s -no-color -var-file=/tmp/gateway.auto.tfvars.json -out=/tmp/gateway.tfplan
-
-      - name: Bloquear alterações fora do roteamento do ambiente
-        env:
-          TARGET_ENVIRONMENT: ${{ inputs.environment }}
-        run: |
-          terraform show -json /tmp/gateway.tfplan > /tmp/gateway-plan.json
-          python3 - <<'PY'
-          import json
-          import os
-          import sys
-
-          environment = os.environ["TARGET_ENVIRONMENT"]
-          plan = json.load(open("/tmp/gateway-plan.json", encoding="utf-8"))
-          allowed = {
-              f'aws_apigatewayv2_integration.cluster["{environment}"]',
-              f'aws_apigatewayv2_integration.grafana["{environment}"]',
-              f'aws_apigatewayv2_route.cluster["{environment}"]',
-              f'aws_apigatewayv2_route.root["{environment}"]',
-              f'aws_apigatewayv2_authorizer.jwt["{environment}"]',
-              f'aws_lambda_permission.gateway_authorizer["{environment}"]',
-          }
-          invalid = []
-          for change in plan.get("resource_changes", []):
-              address = change["address"]
-              actions = change["change"]["actions"]
-              if actions == ["no-op"]:
-                  continue
-              if address.startswith(f'aws_apigatewayv2_route.public["{environment}|'):
-                  continue
-              if address.startswith(f'aws_apigatewayv2_route.grafana["{environment}|'):
-                  continue
-              if address not in allowed:
-                  invalid.append(f"{address}: {','.join(actions)}")
-          if invalid:
-              print("Plano recusado: alteração fora do roteamento do ambiente solicitado:", file=sys.stderr)
-              print("\n".join(invalid), file=sys.stderr)
-              raise SystemExit(1)
-          PY
-
-      - name: Aplicar plano revisado
-        run: terraform apply -input=false -auto-approve /tmp/gateway.tfplan
+        run: bash scripts/terraform-converge.sh reconcile
 
       - name: Resolve URL atual do Gateway
         id: gateway-url

@@ -133,14 +133,19 @@ resource "aws_apigatewayv2_authorizer" "jwt" {
 resource "aws_lambda_permission" "gateway_authorizer" {
   for_each = local.authorizer_arns
 
-  statement_id  = "AllowOficinaGateway-${each.key}"
-  action        = "lambda:InvokeFunction"
-  function_name = each.value
+  # Cada versão precisa de um statement diferente para permitir sobreposição
+  # durante a troca do authorizer, antes de retirar a permissão anterior.
+  statement_id = "AllowOficinaGateway-${each.key}-${substr(sha1(each.value), 0, 12)}"
+  action       = "lambda:InvokeFunction"
+  # O provider armazena a versão separadamente; usar o ARN qualificado inteiro
+  # aqui causa substituições repetidas após cada refresh do state.
+  function_name = join(":", slice(split(":", each.value), 0, 7))
+  qualifier     = try(split(":", each.value)[7], null)
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.main[each.key].execution_arn}/*/*"
 
   lifecycle {
-    prevent_destroy = true
+    create_before_destroy = true
   }
 }
 
