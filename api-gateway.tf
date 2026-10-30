@@ -90,9 +90,6 @@ locals {
           "POST /v1/worker/login",
           "GET /v1/public/work-orders/tracking/{token}",
           "POST /v1/public/work-orders/estimate-decisions/{token}",
-          "GET /q/health",
-          "GET /q/health/live",
-          "GET /q/health/ready",
         ],
         contains(var.public_api_docs_environments, environment) ? [
           "GET /q/openapi",
