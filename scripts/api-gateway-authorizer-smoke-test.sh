@@ -116,7 +116,9 @@ if [[ -n "$SUMMARY_FILE" ]]; then
 fi
 
 set_token ""
-request 'health público' GET '/q/health/ready' 200
+request 'OpenAPI público' GET '/q/openapi?format=json' 200
+jq -e '(.openapi | strings) or (.swagger | strings)' "$RESPONSE_FILE" >/dev/null \
+    || fail "OpenAPI público inválido; requestId=$REQUEST_ID"
 
 payload="$(jq -cn --arg cpf "$CUSTOMER_CPF" '{cpf:$cpf}')"
 request 'login CPF válido' POST '/v1/auth/customer' 200 "$payload"
