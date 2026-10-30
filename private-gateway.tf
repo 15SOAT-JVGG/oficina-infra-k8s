@@ -24,12 +24,25 @@ locals {
     if !startswith(lookup(subnet.tags, "Name", ""), "oficina-gateway-private-")
   ]
 
+  gateway_cidr_ranges = {
+    for cidr in distinct(concat(local.gateway_candidate_cidrs, local.gateway_existing_cidrs)) : cidr => {
+      start = sum([
+        for octet_index, octet in split(".", cidrhost(cidr, 0)) :
+        tonumber(octet) * pow(256, 3 - octet_index)
+      ])
+      end = sum([
+        for octet_index, octet in split(".", cidrhost(cidr, 0)) :
+        tonumber(octet) * pow(256, 3 - octet_index)
+      ]) + pow(2, 32 - tonumber(split("/", cidr)[1])) - 1
+    }
+  }
+
   gateway_available_cidrs = [
     for candidate in local.gateway_candidate_cidrs : candidate
     if alltrue([
       for existing in local.gateway_existing_cidrs :
-      !cidrcontains(candidate, cidrhost(existing, 0)) &&
-      !cidrcontains(existing, cidrhost(candidate, 0))
+      local.gateway_cidr_ranges[candidate].end < local.gateway_cidr_ranges[existing].start ||
+      local.gateway_cidr_ranges[existing].end < local.gateway_cidr_ranges[candidate].start
     ])
   ]
 }
