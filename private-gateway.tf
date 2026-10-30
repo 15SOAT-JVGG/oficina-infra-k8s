@@ -85,11 +85,15 @@ resource "aws_security_group" "api_gateway_vpc_link" {
   vpc_id      = data.aws_vpc.default.id
 
   egress {
-    description = "HTTP apenas para os NLBs internos do Gateway"
+    description = "HTTP apenas para sub-redes da VPC que hospedam NLBs internos do Gateway"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    cidr_blocks = [for subnet in aws_subnet.gateway_private : subnet.cidr_block]
+    # O VPC Link usa as sub-redes privadas acima, mas o NLB interno da aplicação
+    # pode resolver para endereços em outras sub-redes da mesma VPC. Limitar o
+    # egress às sub-redes existentes evita abrir toda a VPC e permite alcançar
+    # os endereços das interfaces do NLB.
+    cidr_blocks = [for subnet in data.aws_subnet.all_vpc : subnet.cidr_block]
   }
 
   tags = {
