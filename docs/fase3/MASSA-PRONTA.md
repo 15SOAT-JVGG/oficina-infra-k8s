@@ -1,7 +1,7 @@
 # Massa pronta - criada automaticamente
 
-Seed aprovado em 31/10/2026, às 11h30 (America/Sao_Paulo).
-[Execução e artifact](https://github.com/15SOAT-JVGG/oficina-app/actions/runs/41210273412).
+Seed aprovado em 31/10/2026, às 12h02 (America/Sao_Paulo).
+[Execução e artifact](https://github.com/15SOAT-JVGG/oficina-app/actions/runs/41212663163).
 
 A massa já existe em homologação. Não cadastrar cliente, veículo ou peça na gravação.
 Importar a [collection](postman/FIAP-Fase3.postman_collection.json) e o
@@ -12,11 +12,11 @@ ambiente no Postman e preencher apenas adminPassword localmente.
 
 | Campo | Valor |
 |---|---|
-| demoName | FIAP-DEMO-07a312f83b62 |
-| demoCpf | 29440648279 |
-| customerId | c17c30d2-1ef3-43a1-8193-f5b0028b9286 |
-| vehicleId | 1044b85a-b517-4eaa-91a9-0160c9bbba87 |
-| partId | 38d2e5ef-c372-4123-8849-74142def6411 |
+| demoName | FIAP-DEMO-3dd67630cefa |
+| demoCpf | 56723007158 |
+| customerId | d8177e01-df1c-4903-b713-f92a78c6ba85 |
+| vehicleId | ff8d6372-8db3-4c13-9492-eba80470a6fa |
+| partId | dcfffbd1-b8a9-4fc5-aac6-8190ffdecbba |
 
 Esses valores pertencem somente ao lote de demonstração criado pelo seed. O CPF foi gerado
 para teste e o e-mail usa example.invalid. IDs são referências para a collection, não segredos.
