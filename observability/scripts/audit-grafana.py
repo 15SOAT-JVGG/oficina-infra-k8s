@@ -24,7 +24,9 @@ if os.getenv('REQUIRE_SIMPLE') == 'true':
     home=get('/api/dashboards/home')
     redirect = home.get('redirectUri', '')
     print('home_dashboard', json.dumps({'title':home.get('dashboard',{}).get('title'), 'redirect':redirect}))
-    assert home.get('dashboard',{}).get('uid') == 'oficina-api-jvm' or redirect.split('?')[0].rstrip('/').split('/')[1:3] == ['d','oficina-api-jvm'], 'Unexpected home dashboard'
+    # Grafana assigns a synthetic UID to a home dashboard loaded from a JSON file.
+    expected_home = '/observability/d/default-home-dashboard/01-oficina3a-visao-geral'
+    assert home.get('dashboard',{}).get('uid') == 'oficina-api-jvm' or redirect == expected_home, 'Unexpected home dashboard'
 print('datasources', json.dumps([{k:d.get(k) for k in ('uid', 'name', 'type')} for d in get('/api/datasources')]))
 for name, expr in {
     'scrape_targets': 'count by(job) (up)',
