@@ -130,3 +130,18 @@ jobs:
           pf_pid=$!
           sleep 3
           curl -fsS --max-time 10 http://localhost:3200/metrics | awk '/^tempo_distributor_spans_received_total|^tempo_discarded_spans_total/ {print}'
+
+      - name: Inventory project Terraform states before planned lab teardown
+        run: |
+          python3 - <<'PYTHON'
+          import subprocess,json,os,collections
+          bucket=os.environ['TF_STATE_BUCKET']
+          keys=['oficina-infra-k8s/terraform.tfstate','oficina-infra-db/homolog/terraform.tfstate','oficina-infra-db/production/terraform.tfstate','oficina-lambda-auth/homolog/terraform.tfstate','oficina-lambda-auth/production/terraform.tfstate']
+          for key in keys:
+              result=subprocess.run(['aws','s3','cp','s3://'+bucket+'/'+key,'-','--only-show-errors'],capture_output=True,text=True)
+              if result.returncode:
+                  print(json.dumps({'key':key,'exists':False}));continue
+              state=json.loads(result.stdout)
+              resources=[r for r in state.get('resources',[]) if r.get('mode')=='managed']
+              print(json.dumps({'key':key,'exists':True,'resources':[r['type']+'.'+r['name'] for r in resources],'providers':sorted({r['provider'] for r in resources})}))
+          PYTHON
