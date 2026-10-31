@@ -86,6 +86,17 @@ jobs:
                 --query 'EvaluationResults[].{action:EvalActionName,resource:EvalResourceName,decision:EvalDecision,missingContext:MissingContextValues}' \
                 --output json || echo "Simulation unavailable for $action."
             done
+            echo 'Simulating narrowly scoped IAM operations on the existing worker role.'
+            lab_role_arn="arn:aws:iam::${account_id}:role/LabRole"
+            for action in iam:AttachRolePolicy iam:PassRole \
+              iam:UpdateAssumeRolePolicy iam:PutRolePolicy; do
+              aws iam simulate-principal-policy \
+                --policy-source-arn "$caller_role_arn" \
+                --action-names "$action" \
+                --resource-arns "$lab_role_arn" \
+                --query 'EvaluationResults[].{action:EvalActionName,resource:EvalResourceName,decision:EvalDecision,missingContext:MissingContextValues}' \
+                --output json || echo "Simulation unavailable for $action on LabRole."
+            done
             echo 'Simulating EKS pod identity operations on the cluster.'
             for action in eks:CreatePodIdentityAssociation eks:CreateAddon eks:UpdateAddon; do
               aws iam simulate-principal-policy \
