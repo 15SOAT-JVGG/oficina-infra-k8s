@@ -25,9 +25,7 @@ loki:
 singleBinary:
   replicas: 1
   persistence:
-    enabled: true
-    size: 8Gi
-    storageClass: gp3
+    enabled: false
   resources:
     requests:
       cpu: 200m
