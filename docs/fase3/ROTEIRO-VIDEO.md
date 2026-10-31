@@ -51,8 +51,9 @@ Explicar o orçamento e a reserva de estoque, sem expor dados pessoais.
 No Grafana, abrir Visão geral e Infraestrutura. Mostrar uptime, CPU, memória e réplicas.
 Iniciar uma carga leve separada do seed, observar o HPA e sua recuperação. Não prometer
 atingir seis pods. Se ocorrer 503, interromper e registrar a falha; não esconder o resultado.
-Mostrar latência/erros, volume diário de OS, tempo médio por etapa e falhas de integrações
-somente após implementar e validar esses indicadores, ainda pendentes na revisão atual.
+Mostrar os painéis HTTP de tráfego, erros e latência, cuja coleta foi validada após a correção
+dos histogramas. O p95 precisa de requisições na janela selecionada. Volume diário de OS,
+tempo médio por etapa e falhas de integrações ainda dependem de implementação/validação.
 
 ## 6. Logs, traces e alertas - 2 minutos
 
@@ -139,3 +140,14 @@ O perfil leve tem limite global de quatro requisições/s. Aumentar pods não é
 qualquer carga: depende da utilização e do estado inicial. Não elevar agressivamente os
 valores para forçar uma cena. Se ocorrer 503 ou falha no orçamento de erros, interromper
 a demonstração e consultar o resumo. Não apresentar a execução reprovada como sucesso.
+
+### Como ler os painéis durante a apresentação
+
+- Memória está em MB e CPU em millicores. Réplicas desejadas mostram a decisão do HPA;
+  disponíveis indicam pods efetivamente prontos.
+- A seção de logs começa recolhida. Abrir pela seta, ler horário/nível/mensagem e clicar
+  na linha quando precisar dos campos técnicos. Explore mantém acesso à consulta original.
+- Os histogramas HTTP foram corrigidos e a coleta foi validada. Se não houver tráfego
+  recente, gerar poucas chamadas da collection e aguardar o intervalo de coleta; não
+  chamar um p95 vazio de zero. Erros rejeitados no Gateway/Authorizer são outro salto e
+  não devem ser confundidos com respostas 5xx emitidas pela aplicação.

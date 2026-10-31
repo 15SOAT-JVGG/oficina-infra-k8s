@@ -34,7 +34,7 @@ sem demonstração completa; **Parcial** = cobertura incompleta; **Pendente** = 
 | Grafana simples e acessível | Comprovado | 31 dashboards reduzidos a 2 na pasta FIAP; home aponta para a visão geral; login e banco HTTP 200 |
 | CPU e memória Kubernetes | Comprovado | Exporters/targets disponíveis e dashboard de recursos versionado |
 | Coleta da API | Comprovado | 2 targets oficina-mecanica-management em homolog, ambos UP após reaplicar ServiceMonitor |
-| Latência e tráfego HTTP | Parcial | Painéis e filtro de histogramas existem; auditoria real não encontrou http_server_requests_seconds_count/bucket. Existem métricas de conexões/bytes, que não substituem latência p95 |
+| Latência e tráfego HTTP | Comprovado em homolog | Após corrigir os limites de Timer para nanossegundos, auditoria 41246983292 encontrou 9 séries de contagem e 99 buckets. Painéis consultam contagem, erros e p95; ausência de tráfego recente pode deixar p95 sem amostra |
 | Healthchecks/uptime | Comprovado com limite | Probe pública com sucesso=1, readiness/liveness nos manifests. Probe mede Swagger; não representa todas as operações/integrações |
 | Alertas de falha no processamento de OS | Pendente | Existem alertas técnicos genéricos; faltam sinal/regra específica de OS, demonstração firing/resolved e evidência do destino de notificação |
 | Logs JSON | Comprovado | Amostra Loki contém somente entradas JSON; nenhum conteúdo foi exportado para este documento |
@@ -92,3 +92,13 @@ em exigências inventadas, mas devem ficar claras na apresentação.
 - NLB cross-zone habilitado, mas 503 persistiu. Há também falhas SMTP por limite de envio;
   elas não explicam os 503 da carga de login, que não envia e-mail. Causa ainda aberta.
 - Indicadores de negócio, histogramas HTTP, traces e alertas específicos continuam pendentes.
+
+## Atualização de dashboards e HTTP - 31/10/2026
+
+- Publicação e verificação dos dashboards: run 41246150683, seguido das atualizações
+  dos PRs 35/36. Logs recolhidos, linhas curtas e detalhes por clique; memória em MB.
+- Correção dos limites de histogramas: app PR 89. Deploy 41246450540 passou, incluindo smokes.
+- Auditoria 41246983292 confirmou http_server_requests_seconds_count e _bucket: 9 e 99
+  séries respectivamente. Isso fecha a ausência dessas séries, não a instrumentação de negócio.
+- Traces reais no Tempo, volume diário, duração por etapa e alertas de OS permanecem pendentes.
+- Não foi repetido teste de carga/HPA para declarar os 503 resolvidos.
