@@ -1,9 +1,8 @@
 # Matriz de atendimento - Fase 3
 
-Revisão: 30/10/2026 (BRT). Base: enunciado fornecido pelo usuário, páginas 2-5,
-branches homolog e evidência de execução. O usuário confirmou que ainda não produziu
-vídeo nem PDF final de entrega. Os documentos e diagramas deste pacote foram preparados
-nesta revisão. **O projeto ainda não está integralmente pronto para a entrega.**
+Revisão atualizada: 31/10/2026 (BRT). Base: enunciado fornecido pelo usuário, páginas 2-5,
+branches homolog e evidência de execução. O vídeo foi recebido e incluído no PDF do Portal;
+a revisão de conteúdo do vídeo e as pendências técnicas continuam abertas. **O projeto ainda não está integralmente pronto para a entrega.**
 
 Estados: **Comprovado** = evidência observada; **Implementado** = fonte/configuração existente,
 sem demonstração completa; **Parcial** = cobertura incompleta; **Pendente** = item ainda faltante.
@@ -54,8 +53,8 @@ sem demonstração completa; **Parcial** = cobertura incompleta; **Pendente** = 
 | ADRs | Documentado | Comunicação, HPA e observabilidade; complementam os ADRs existentes da aplicação |
 | Justificativa do banco / ER / relacionamentos | Documentado | MODELO-DE-DADOS.md + ER atualizado, inclusive active, app_users e tokens de decisão |
 | README de cada repo com propósito/stack/deploy/diagrama | Parcial | Existem os quatro; faltam alinhamento/link explícito de Swagger/deploy/documentação em alguns e atualização da referência ao vídeo antigo |
-| Vídeo atual <=15 min | Pendente do usuário | Roteiro preparado; usuário gravará após concluir as lacunas técnicas |
-| PDF único para o Portal | Pendente do vídeo | Folha de entrega preparada; dossiê técnico não é submissão final enquanto faltar vídeo e conformidade |
+| Vídeo atual <=15 min | Disponível; conteúdo não revisado | [Vídeo](https://youtu.be/hgZPRw7hWeA), 13min29s; metadados acessíveis sem login em 31/10/2026 |
+| PDF único para o Portal | Preparado com vídeo | Duas páginas com repositórios, vídeo, documentação e avaliador; revisão técnica permanece pendente |
 
 ## Evidências reproduzíveis
 
@@ -73,7 +72,7 @@ sem demonstração completa; **Parcial** = cobertura incompleta; **Pendente** = 
 2. Implementar as agregações persistentes de volume diário e duração por etapa; definir a semântica de Finalização/cancelamentos.
 3. Instrumentar falhas de OS/integrações e demonstrar alerta disparando e resolvendo.
 4. Atualizar links/READMEs dos quatro repositórios e registrar evidência de HPA/pipelines. Conferir credenciais do DB respeitando a restrição atual de secrets a três repositórios; não ampliar esse escopo automaticamente.
-5. Usuário grava o vídeo; conferir acesso/duração, preencher folha e gerar o PDF final de submissão.
+5. Vídeo recebido (13min29s) e incluído no PDF do Portal; revisar o conteúdo, fechar as lacunas técnicas e concluir a revisão de submissão.
 
 A política do Lab impediu o uso de EBS CSI com a identidade necessária. emptyDir permitiu a
 homologação, mas histórico de telemetria é volátil. O enunciado não determina EBS, Multi-AZ
