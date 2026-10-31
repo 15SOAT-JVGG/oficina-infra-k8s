@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="1220" viewBox="0 0 1500 1220"><rect width="100%" height="100%" fill="white"/>
+<text x="750.0" y="52" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="27" font-weight="bold" fill="#17324d">Abertura de OS: JWT de funcionário ADMIN / MECHANIC</text>
+<rect x="18.0" y="85" width="224" height="69" rx="9" fill="#e8f1f9" stroke="#829bb3"/>
+<text x="130.0" y="115" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="bold" fill="#17324d">Funcionário</text>
+<line x1="130.0" y1="158" x2="130.0" y2="1130" stroke="#b3c2cf" stroke-width="2" stroke-dasharray="6 6"/>
+<rect x="266.0" y="85" width="224" height="69" rx="9" fill="#e8f1f9" stroke="#829bb3"/>
+<text x="378.0" y="115" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="bold" fill="#17324d">API Gateway</text>
+<line x1="378.0" y1="158" x2="378.0" y2="1130" stroke="#b3c2cf" stroke-width="2" stroke-dasharray="6 6"/>
+<rect x="514.0" y="85" width="224" height="69" rx="9" fill="#e8f1f9" stroke="#829bb3"/>
+<text x="626.0" y="115" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="bold" fill="#17324d">JWT</text>
+<text x="626.0" y="138" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="bold" fill="#17324d">Authorizer</text>
+<line x1="626.0" y1="158" x2="626.0" y2="1130" stroke="#b3c2cf" stroke-width="2" stroke-dasharray="6 6"/>
+<rect x="762.0" y="85" width="224" height="69" rx="9" fill="#e8f1f9" stroke="#829bb3"/>
+<text x="874.0" y="115" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="bold" fill="#17324d">API /</text>
+<text x="874.0" y="138" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="bold" fill="#17324d">WorkOrderService</text>
+<line x1="874.0" y1="158" x2="874.0" y2="1130" stroke="#b3c2cf" stroke-width="2" stroke-dasharray="6 6"/>
+<rect x="1010.0" y="85" width="224" height="69" rx="9" fill="#e8f1f9" stroke="#829bb3"/>
+<text x="1122.0" y="115" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="bold" fill="#17324d">RDS</text>
+<text x="1122.0" y="138" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="bold" fill="#17324d">PostgreSQL</text>
+<line x1="1122.0" y1="158" x2="1122.0" y2="1130" stroke="#b3c2cf" stroke-width="2" stroke-dasharray="6 6"/>
+<rect x="1258.0" y="85" width="224" height="69" rx="9" fill="#e8f1f9" stroke="#829bb3"/>
+<text x="1370.0" y="115" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="bold" fill="#17324d">Adaptador</text>
+<text x="1370.0" y="138" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="bold" fill="#17324d">SMTP</text>
+<line x1="1370.0" y1="158" x2="1370.0" y2="1130" stroke="#b3c2cf" stroke-width="2" stroke-dasharray="6 6"/>
+<rect x="137.9609375" y="158" width="232.078125" height="53" fill="white"/>
+<text x="254.0" y="178" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">1. POST /v1/work-orders</text>
+<text x="254.0" y="201" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">+ Bearer</text>
+<line x1="130.0" y1="215" x2="378.0" y2="215" stroke="#245a86" stroke-width="2"/>
+<polygon points="378.0,215 366.0,209 366.0,221" fill="#245a86"/>
+<rect x="432.734375" y="262" width="138.53125" height="29" fill="white"/>
+<text x="502.0" y="282" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">2. Validar JWT</text>
+<line x1="378.0" y1="295" x2="626.0" y2="295" stroke="#245a86" stroke-width="2"/>
+<polygon points="626.0,295 614.0,289 614.0,301" fill="#245a86"/>
+<rect x="405.2578125" y="342" width="193.484375" height="29" fill="white"/>
+<text x="502.0" y="362" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">3. Permitir ou negar</text>
+<line x1="626.0" y1="375" x2="378.0" y2="375" stroke="#245a86" stroke-width="2"/>
+<polygon points="378.0,375 390.0,369 390.0,381" fill="#245a86"/>
+<rect x="458.8125" y="422" width="334.375" height="29" fill="white"/>
+<text x="626.0" y="442" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">4. Encaminhar; validar RBAC e DTO</text>
+<line x1="378.0" y1="455" x2="874.0" y2="455" stroke="#245a86" stroke-width="2"/>
+<polygon points="874.0,455 862.0,449 862.0,461" fill="#245a86"/>
+<rect x="886.59375" y="478" width="222.8125" height="53" fill="white"/>
+<text x="998.0" y="498" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">5. Transação: consultar</text>
+<text x="998.0" y="521" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">referências</text>
+<line x1="874.0" y1="535" x2="1122.0" y2="535" stroke="#245a86" stroke-width="2"/>
+<polygon points="1122.0,535 1110.0,529 1110.0,541" fill="#245a86"/>
+<rect x="899.7890625" y="558" width="196.421875" height="53" fill="white"/>
+<text x="998.0" y="578" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">6. Cliente / veículo /</text>
+<text x="998.0" y="601" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">funcionário opcional</text>
+<line x1="1122.0" y1="615" x2="874.0" y2="615" stroke="#245a86" stroke-width="2"/>
+<polygon points="874.0,615 886.0,609 886.0,621" fill="#245a86"/>
+<rect x="879.7421875" y="638" width="236.515625" height="53" fill="white"/>
+<text x="998.0" y="658" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">7. Persistir OS RECEIVED</text>
+<text x="998.0" y="681" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">e itens opcionais</text>
+<line x1="874.0" y1="695" x2="1122.0" y2="695" stroke="#245a86" stroke-width="2"/>
+<polygon points="1122.0,695 1110.0,689 1110.0,701" fill="#245a86"/>
+<rect x="916.0390625" y="742" width="411.921875" height="29" fill="white"/>
+<text x="1122.0" y="762" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">8. Solicitar notificação de acompanhamento</text>
+<line x1="874.0" y1="775" x2="1370.0" y2="775" stroke="#245a86" stroke-width="2"/>
+<polygon points="1370.0,775 1358.0,769 1358.0,781" fill="#245a86"/>
+<rect x="993.140625" y="822" width="257.71875" height="29" fill="white"/>
+<text x="1122.0" y="842" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">9. Entrega ou falha tratada</text>
+<line x1="1370.0" y1="855" x2="874.0" y2="855" stroke="#245a86" stroke-width="2"/>
+<polygon points="874.0,855 886.0,849 886.0,861" fill="#245a86"/>
+<rect x="881.6484375" y="902" width="232.703125" height="29" fill="white"/>
+<text x="998.0" y="922" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">10. Confirmar transação</text>
+<line x1="874.0" y1="935" x2="1122.0" y2="935" stroke="#245a86" stroke-width="2"/>
+<polygon points="1122.0,935 1110.0,929 1110.0,941" fill="#245a86"/>
+<rect x="494.8359375" y="982" width="262.328125" height="29" fill="white"/>
+<text x="626.0" y="1002" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">11. 201 Created + Location</text>
+<line x1="874.0" y1="1015" x2="378.0" y2="1015" stroke="#245a86" stroke-width="2"/>
+<polygon points="378.0,1015 390.0,1009 390.0,1021" fill="#245a86"/>
+<rect x="134.0234375" y="1038" width="239.953125" height="53" fill="white"/>
+<text x="254.0" y="1058" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">12. Devolver resposta ao</text>
+<text x="254.0" y="1081" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">funcionário</text>
+<line x1="378.0" y1="1095" x2="130.0" y2="1095" stroke="#245a86" stroke-width="2"/>
+<polygon points="130.0,1095 142.0,1089 142.0,1101" fill="#245a86"/>
+<text x="750.0" y="1173" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="17" font-weight="normal" fill="#17324d">Pré-condição: login do funcionário. Falha transacional exige rollback; CUSTOMER não autoriza este POST.</text>
+</svg>
