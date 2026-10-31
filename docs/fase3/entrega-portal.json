@@ -1,0 +1,166 @@
+{
+  "revisao": "31/10/2026",
+  "video_url": null,
+  "video_duracao_segundos": null,
+  "pendencias_tecnicas": true,
+  "avaliador_verificado_em": "31/10/2026",
+  "repositorios": [
+    {
+      "nome": "oficina-lambda-auth",
+      "proposito": "autenticação serverless por CPF e Lambda Authorizer",
+      "url": "https://github.com/15SOAT-JVGG/oficina-lambda-auth",
+      "avaliador_confirmado": true
+    },
+    {
+      "nome": "oficina-infra-k8s",
+      "proposito": "Kubernetes, Gateway e observabilidade com Terraform",
+      "url": "https://github.com/15SOAT-JVGG/oficina-infra-k8s",
+      "avaliador_confirmado": true
+    },
+    {
+      "nome": "oficina-infra-db",
+      "proposito": "banco PostgreSQL gerenciado e infraestrutura de rede",
+      "url": "https://github.com/15SOAT-JVGG/oficina-infra-db",
+      "avaliador_confirmado": true
+    },
+    {
+      "nome": "oficina-app",
+      "proposito": "API da oficina executada em Kubernetes",
+      "url": "https://github.com/15SOAT-JVGG/oficina-app",
+      "avaliador_confirmado": true
+    }
+  ],
+  "documentacao": [
+    [
+      "Índice e execução guiada",
+      [
+        [
+          "Índice",
+          "https://github.com/15SOAT-JVGG/oficina-infra-k8s/blob/main/docs/fase3/README.md"
+        ],
+        [
+          "Comece aqui",
+          "https://github.com/15SOAT-JVGG/oficina-infra-k8s/blob/main/docs/fase3/COMECE-AQUI.md"
+        ]
+      ]
+    ],
+    [
+      "Componentes / nuvem",
+      [
+        [
+          "Arquitetura",
+          "https://github.com/15SOAT-JVGG/oficina-infra-k8s/blob/main/docs/fase3/ARQUITETURA.md"
+        ],
+        [
+          "Diagrama",
+          "https://github.com/15SOAT-JVGG/oficina-infra-k8s/blob/main/docs/fase3/diagramas/componentes.png"
+        ]
+      ]
+    ],
+    [
+      "Sequências dos fluxos",
+      [
+        [
+          "Descrição",
+          "https://github.com/15SOAT-JVGG/oficina-infra-k8s/blob/main/docs/fase3/SEQUENCIAS.md"
+        ],
+        [
+          "Autenticação",
+          "https://github.com/15SOAT-JVGG/oficina-infra-k8s/blob/main/docs/fase3/diagramas/autenticacao.png"
+        ],
+        [
+          "Abertura de OS",
+          "https://github.com/15SOAT-JVGG/oficina-infra-k8s/blob/main/docs/fase3/diagramas/abertura-os.png"
+        ]
+      ]
+    ],
+    [
+      "Banco e modelo relacional",
+      [
+        [
+          "Justificativa e relações",
+          "https://github.com/15SOAT-JVGG/oficina-infra-k8s/blob/main/docs/fase3/MODELO-DE-DADOS.md"
+        ],
+        [
+          "Diagrama ER",
+          "https://github.com/15SOAT-JVGG/oficina-infra-k8s/blob/main/docs/fase3/diagramas/modelo-er.png"
+        ]
+      ]
+    ],
+    [
+      "RFCs - decisões técnicas",
+      [
+        [
+          "Nuvem",
+          "https://github.com/15SOAT-JVGG/oficina-infra-k8s/blob/main/docs/fase3/rfc/001-cloud-gerenciada.md"
+        ],
+        [
+          "PostgreSQL",
+          "https://github.com/15SOAT-JVGG/oficina-infra-k8s/blob/main/docs/fase3/rfc/002-postgresql.md"
+        ],
+        [
+          "Autenticação",
+          "https://github.com/15SOAT-JVGG/oficina-infra-k8s/blob/main/docs/fase3/rfc/003-autenticacao.md"
+        ]
+      ]
+    ],
+    [
+      "ADRs - decisões arquiteturais",
+      [
+        [
+          "Comunicação",
+          "https://github.com/15SOAT-JVGG/oficina-infra-k8s/blob/main/docs/fase3/adr/001-comunicacao-e-fronteiras.md"
+        ],
+        [
+          "HPA",
+          "https://github.com/15SOAT-JVGG/oficina-infra-k8s/blob/main/docs/fase3/adr/002-hpa.md"
+        ],
+        [
+          "Observabilidade",
+          "https://github.com/15SOAT-JVGG/oficina-infra-k8s/blob/main/docs/fase3/adr/003-observabilidade-no-lab.md"
+        ]
+      ]
+    ],
+    [
+      "Documentos para download",
+      [
+        [
+          "Dossiê técnico",
+          "https://github.com/15SOAT-JVGG/oficina-infra-k8s/blob/main/output/pdf/fiap-fase3-dossie-tecnico.pdf"
+        ],
+        [
+          "PDFs individuais",
+          "https://github.com/15SOAT-JVGG/oficina-infra-k8s/tree/main/output/pdf/separados"
+        ]
+      ]
+    ],
+    [
+      "Evidências e roteiro",
+      [
+        [
+          "Matriz de validação",
+          "https://github.com/15SOAT-JVGG/oficina-infra-k8s/blob/main/docs/fase3/VALIDACAO.md"
+        ],
+        [
+          "Roteiro do vídeo",
+          "https://github.com/15SOAT-JVGG/oficina-infra-k8s/blob/main/docs/fase3/ROTEIRO-VIDEO.md"
+        ]
+      ]
+    ]
+  ],
+  "acessos": [
+    [
+      "Swagger",
+      "https://dcs5hfax0e.execute-api.us-east-1.amazonaws.com/q/swagger-ui/"
+    ],
+    [
+      "Grafana",
+      "https://dcs5hfax0e.execute-api.us-east-1.amazonaws.com/observability/"
+    ],
+    [
+      "Postman",
+      "https://github.com/15SOAT-JVGG/oficina-infra-k8s/tree/main/docs/fase3/postman"
+    ]
+  ],
+  "matriz_url": "https://github.com/15SOAT-JVGG/oficina-infra-k8s/blob/main/docs/fase3/VALIDACAO.md"
+}
