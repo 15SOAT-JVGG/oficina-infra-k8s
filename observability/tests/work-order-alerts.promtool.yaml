@@ -1,0 +1,25 @@
+groups:
+- name: oficina.workorders
+  rules:
+  - alert: WorkOrderProcessingFailure
+    expr: sum by(namespace) (increase(workshop_work_order_processing_failures_total[5m]))
+      > 0
+    for: 1m
+    labels:
+      severity: critical
+      service: oficina-api
+    annotations:
+      summary: Falha no processamento de uma OS
+      description: "Resposta 5xx em rota de OS. Investigue logs e trace da requisi\xE7\
+        \xE3o; erros esperados 4xx n\xE3o disparam este alerta."
+  - alert: WorkOrderNotificationFailure
+    expr: sum by(namespace) (increase(workshop_integration_calls_total{integration="smtp",outcome="failure"}[5m]))
+      > 0
+    for: 1m
+    labels:
+      severity: warning
+      service: oficina-api
+    annotations:
+      summary: "Notifica\xE7\xE3o de OS n\xE3o entregue"
+      description: "O SMTP falhou. A opera\xE7\xE3o da OS foi preservada; confira\
+        \ a integra\xE7\xE3o e a necessidade de reenviar a notifica\xE7\xE3o."
