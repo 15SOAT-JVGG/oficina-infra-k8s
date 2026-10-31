@@ -2,6 +2,7 @@
 import base64
 import json
 import os
+import time
 import urllib.parse
 import urllib.request
 
@@ -45,7 +46,7 @@ rules = get('/api/datasources/proxy/uid/prometheus/api/v1/rules?type=alert')
 print('alert_rules', json.dumps([{'name':r.get('name'), 'state':r.get('state')} for g in rules.get('data',{}).get('groups',[]) for r in g.get('rules',[]) if r.get('type')=='alerting']))
 for kind, path in {
     'loki_services':'/api/datasources/proxy/uid/loki/loki/api/v1/label/service/values',
-    'tempo_search':'/api/datasources/proxy/uid/tempo/api/search?limit=5',
+    'tempo_search':'/api/datasources/proxy/uid/tempo/api/search?' + urllib.parse.urlencode({'q':'{}','limit':5,'start':int(time.time())-86400,'end':int(time.time())}),
 }.items():
     try:
         result=get(path)

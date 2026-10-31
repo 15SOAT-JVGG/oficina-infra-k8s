@@ -1,0 +1,23 @@
+rule_files:
+- work-order-alerts.promtool.yaml
+evaluation_interval: 1m
+tests:
+- interval: 1m
+  input_series:
+  - series: workshop_work_order_processing_failures_total{namespace="homolog"}
+    values: 0 0 1 1 1 1 1 1 1 1 1 1 1
+  alert_rule_test:
+  - eval_time: 3m
+    alertname: WorkOrderProcessingFailure
+    exp_alerts:
+    - exp_labels:
+        namespace: homolog
+        severity: critical
+        service: oficina-api
+      exp_annotations:
+        summary: Falha no processamento de uma OS
+        description: "Resposta 5xx em rota de OS. Investigue logs e trace da requisi\xE7\
+          \xE3o; erros esperados 4xx n\xE3o disparam este alerta."
+  - eval_time: 12m
+    alertname: WorkOrderProcessingFailure
+    exp_alerts: []
