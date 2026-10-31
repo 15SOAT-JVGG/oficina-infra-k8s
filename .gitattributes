@@ -1,0 +1,3 @@
+
+# Generated PDFs are binary artifacts; preserve their byte offsets.
+output/pdf/*.pdf binary
