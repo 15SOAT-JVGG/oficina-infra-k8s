@@ -49,7 +49,7 @@
     },
     {
       "type": "timeseries",
-      "title": "CPU por pod (cores)",
+      "title": "CPU por pod (millicores)",
       "id": 3,
       "datasource": {
         "type": "prometheus",
@@ -63,15 +63,23 @@
       },
       "targets": [
         {
-          "expr": "sum by (namespace, pod) (rate(container_cpu_usage_seconds_total{namespace=\"$namespace\",container!=\"\",image!=\"\"}[5m]))",
+          "expr": "1000 * sum by (namespace, pod) (rate(container_cpu_usage_seconds_total{namespace=\"$namespace\",container!=\"\",image!=\"\"}[5m]))",
           "legendFormat": "{{namespace}} / {{pod}}",
           "refId": "A"
         }
-      ]
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: mCPU",
+          "decimals": 0,
+          "min": 0
+        },
+        "overrides": []
+      }
     },
     {
       "type": "timeseries",
-      "title": "Memória working set por pod",
+      "title": "Memória por pod (MB)",
       "id": 4,
       "datasource": {
         "type": "prometheus",
@@ -85,11 +93,19 @@
       },
       "targets": [
         {
-          "expr": "sum by (namespace, pod) (container_memory_working_set_bytes{namespace=\"$namespace\",container!=\"\",image!=\"\"})",
+          "expr": "sum by (namespace, pod) (container_memory_working_set_bytes{namespace=\"$namespace\",container!=\"\",image!=\"\"}) / 1000000",
           "legendFormat": "{{namespace}} / {{pod}}",
           "refId": "A"
         }
-      ]
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: MB",
+          "decimals": 1,
+          "min": 0
+        },
+        "overrides": []
+      }
     },
     {
       "type": "timeseries",
@@ -160,7 +176,7 @@
   },
   "title": "02 - Oficina: infraestrutura",
   "uid": "oficina-kubernetes",
-  "version": 2,
+  "version": 3,
   "links": [
     {
       "title": "Visão geral",
