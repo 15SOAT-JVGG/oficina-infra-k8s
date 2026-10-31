@@ -47,7 +47,7 @@ O passo de seed abaixo só é necessário para renovar a massa.
 4. O ambiente desta revisão já está publicado [nesta pasta](postman/). Se o Lab/banco for recriado, substituir pelo artifact de um novo seed.
 
 O seed anterior aprovado, vinculado na tabela, não exportava o ambiente Postman.
-A [execução nova aprovada](https://github.com/15SOAT-JVGG/oficina-app/actions/runs/41210273412) já exporta o ambiente.
+A [execução nova aprovada](https://github.com/15SOAT-JVGG/oficina-app/actions/runs/41212663163) já exporta o ambiente.
 
 ## Executar na gravação - somente 12 requests
 
@@ -103,3 +103,22 @@ Para demonstrar entrega automatizada, usar o run homolog aprovado da tabela.
 
 O Portal pede vídeo de até 15 minutos e PDF único com links. Os documentos e diagramas
 individuais ficam neste repositório e não dependem de ZIP.
+
+## Manutenção da massa e acesso local
+
+[Action de manutenção: senha e limpeza de lote](https://github.com/15SOAT-JVGG/oficina-app/actions/workflows/homolog-maintenance.yml).
+
+- preview_seed é o padrão: informar o batch FIAP-DEMO-xxxxxxxxxxxx da página Massa Pronta.
+  Mostra contagens e não apaga nada.
+- delete_seed exige batch e confirmation com exatamente o mesmo valor. Apaga somente
+  aquele lote e suas dependências, em transação. Não existe opção de limpar todas as massas.
+- Cliente do teste Authorizer, estoque/veículo referenciado fora do lote e dados que não
+  correspondam à massa sintética bloqueiam a exclusão. Falhas causam rollback.
+- Após excluir o lote usado no ambiente Postman, executar seed_only e importar o ambiente
+  do lote novo. Os IDs antigos deixam de funcionar. Exclusão não possui backup automático.
+- rotate_admin aplica ao administrador existente a senha da secret APP_SEED_ADMIN_PASSWORD
+  do Environment homolog e verifica o login. Trocar somente a secret não troca senha já
+  cadastrada no banco; o seed inicial preserva usuários existentes.
+
+O arquivo pessoal de acesso e o ambiente com senha preenchida ficam somente na máquina
+local do operador, fora do Git. Os arquivos publicados continuam com senha e tokens vazios.
