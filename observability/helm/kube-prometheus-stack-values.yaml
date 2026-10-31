@@ -49,9 +49,7 @@ grafana:
     userKey: admin-user
     passwordKey: admin-password
   persistence:
-    enabled: true
-    size: 2Gi
-    storageClassName: gp3
+    enabled: false
   grafana.ini:
     server:
       root_url: "%(protocol)s://%(domain)s/observability/"
@@ -151,13 +149,8 @@ prometheus:
     externalLabels:
       cluster: oficina
     storageSpec:
-      volumeClaimTemplate:
-        spec:
-          storageClassName: gp3
-          accessModes: [ReadWriteOnce]
-          resources:
-            requests:
-              storage: 8Gi
+      emptyDir:
+        sizeLimit: 8Gi
     resources:
       requests:
         cpu: 300m

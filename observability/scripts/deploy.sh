@@ -10,6 +10,13 @@ source "$observability_dir/helm/versions.env"
 cluster_name="${EKS_CLUSTER_NAME:-oficina}"
 [[ "$cluster_name" =~ ^[a-zA-Z0-9_-]+$ ]] || { echo "Invalid cluster name" >&2; exit 2; }
 
+# Generate redirects and asset URLs for the public TLS endpoint, not localhost.
+gateway_url="$(aws apigatewayv2 get-apis --query "Items[?Name=='oficina-homolog'].ApiEndpoint | [0]" --output text)"
+[[ "$gateway_url" =~ ^https://[a-z0-9]+\.execute-api\.[a-z0-9-]+\.amazonaws\.com$ ]] || {
+  echo "Could not resolve the homolog API Gateway endpoint." >&2; exit 1;
+}
+grafana_root_url="$gateway_url/observability/"
+
 # The script intentionally installs the cluster-wide stack once, independent of app environment.
 aws eks update-kubeconfig --name "$cluster_name" --region "$AWS_REGION"
 kubectl create namespace observability --dry-run=client -o yaml | kubectl apply -f -
@@ -40,13 +47,14 @@ diagnose_observability_failure() {
 }
 trap diagnose_observability_failure ERR
 
-kubectl apply --filename "$observability_dir/storage/gp3.yaml"
+echo "Learner Lab storage: emptyDir; telemetry history is lost when pods are replaced."
 
 # Install Prometheus Operator first because later app/rule manifests use its CRDs.
 helm upgrade --install oficina-monitoring prometheus-community/kube-prometheus-stack \
   --version "$KUBE_PROMETHEUS_STACK_VERSION" \
   --namespace observability \
   --values "$observability_dir/helm/kube-prometheus-stack-values.yaml" \
+  --set-string "grafana.grafana\\.ini.server.root_url=$grafana_root_url" \
   --wait --timeout 15m --history-max 10
 
 kubectl wait --for=condition=Established --timeout=120s \

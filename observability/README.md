@@ -7,8 +7,8 @@ Loki e Tempo. Labels de ambiente ajudam a filtrar os dados, mas não são uma ba
 ## Componentes e dados
 
 - `kube-prometheus-stack`: Prometheus Operator, Grafana, Alertmanager, kube-state-metrics e node-exporter.
-- Loki monolítico: uma réplica, filesystem em PVC e retenção de 72 horas para baixo volume acadêmico.
-- Tempo: uma réplica, filesystem em PVC e retenção de 24 horas.
+- Loki monolítico: uma réplica, filesystem em emptyDir e retenção de 72 horas para baixo volume acadêmico.
+- Tempo: uma réplica, filesystem em emptyDir e retenção de 24 horas.
 - Alloy: coleta stdout dos pods em `homolog`/`production` e recebe OTLP gRPC/HTTP internamente;
   métricas de Kubernetes continuam sendo coletadas pelo Prometheus.
 - Blackbox Exporter: sondagem HTTP interna via CRD `Probe`.
@@ -27,12 +27,17 @@ considerado acessível somente pelo Prometheus até essa validação.
 
 Os tamanhos e réplicas são uma configuração inicial, não um sizing aprovado. O cluster usa nós
 `t3.medium`; medir requests/limits e PVCs em homologação antes de confiar na retenção ou alertas.
-O add-on EBS CSI e as permissões EC2 do role dos nós (LabRole no Learner Lab) precisam estar
-disponíveis. O deploy cria uma StorageClass `gp3` criptografada e referencia explicitamente essa
-classe nos PVCs, sem torná-la padrão para outros workloads. Sem PVC bound, os pods de Grafana,
-Prometheus/Loki/Tempo não ficarão prontos. Loki local é um modo simples de demonstração,
-sem alta disponibilidade e sem backup durável fora do PVC. Migração para S3 requer provisionamento e
-IAM revisados, fora deste apply Helm.
+No Learner Lab, a stack usa `emptyDir`: a política do Lab bloqueia criar a role
+IAM dedicada do EBS CSI e alterar trust/permissões da LabRole. O add-on sem identidade
+ficava em CREATE_FAILED e os PVCs nunca eram provisionados. O recurso Terraform do
+add-on foi retirado; a recuperação controlada recusa remover o add-on se houver um
+PVC de observabilidade com volume atribuído e permite somente sua remoção no plano.
+
+**Histórico de métricas, logs, traces e alterações manuais no Grafana pode ser perdido
+quando os pods forem recriados.** Dashboards e datasources versionados são reprovisionados.
+Esta configuração serve à demonstração acadêmica, sem garantia de retenção durável.
+Para persistência, configurar uma role EBS CSI com permissões adequadas antes de
+reativar PVCs gp3. A StorageClass existente e PVCs pendentes são preservados na recuperação.
 
 ## Aplicação manual e serializada
 

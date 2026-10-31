@@ -45,6 +45,8 @@ on:
         required: false
       HOMOLOG_AWS_SESSION_TOKEN:
         required: false
+      GRAFANA_ADMIN_PASSWORD:
+        required: false
       AUTHORIZER_TEST_CUSTOMER_CPF:
         required: false
 
@@ -140,6 +142,7 @@ jobs:
       AUTHORIZER_TEST_CUSTOMER_CPF: ${{ secrets.AUTHORIZER_TEST_CUSTOMER_CPF }}
       JWT_ISSUER: ${{ inputs.jwt_issuer }}
       GATEWAY_URL: ${{ needs.reconcile.outputs.gateway_url }}
+      GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
     steps:
       - name: Checkout infraestrutura
         uses: actions/checkout@v4
@@ -170,3 +173,28 @@ jobs:
             echo "Login do Grafana retornou HTTP $status pelo API Gateway." >&2
             exit 1
           }
+
+      - name: Verificar credencial e banco do Grafana sem expor secrets
+        if: inputs.source_kind == 'observability'
+        run: |
+          python3 - <<'PYTHON'
+          import base64, json, os, urllib.request
+          base = os.environ['GATEWAY_URL'].rstrip('/') + '/observability'
+          password = os.environ['GRAFANA_ADMIN_PASSWORD']
+          if not password:
+              raise SystemExit('Secret GRAFANA_ADMIN_PASSWORD ausente.')
+          credential = base64.b64encode(('admin:' + password).encode()).decode()
+          request = urllib.request.Request(base + '/api/user', headers={'Authorization': 'Basic ' + credential})
+          try:
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  user = json.load(response)
+                  if response.status != 200 or user.get('login') != 'admin':
+                      raise SystemExit('Credencial do Grafana não foi validada.')
+              with urllib.request.urlopen(base + '/api/health', timeout=30) as response:
+                  health = json.load(response)
+                  if response.status != 200 or health.get('database') != 'ok':
+                      raise SystemExit('Banco do Grafana não está saudável.')
+          except Exception:
+              raise SystemExit('Falha ao verificar autenticação/saúde do Grafana; nenhum secret foi registrado.')
+          print('Grafana: login admin autenticado HTTP 200; banco saudável HTTP 200.')
+          PYTHON
