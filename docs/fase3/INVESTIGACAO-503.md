@@ -35,3 +35,16 @@ as restrições do framework e os testes de autenticação.
 
 A queda do Lab interrompe a investigação de runtime. Reduzir a carga é mitigação;
 não estabelece estabilidade, não garante escala e não converte run reprovado em aprovado.
+
+## Retorno do Lab - 31/10/2026
+
+A sessão renovada permitiu o diagnóstico somente de leitura:
+https://github.com/15SOAT-JVGG/oficina-infra-k8s/actions/runs/41209339813
+
+NLB ativo, cross-zone true, dois targets healthy e HPA com current=desired=2.
+Grafana/login e OpenAPI responderam 200 em consultas públicas pontuais. A janela recente
+continha dois 503 com integrationLatency=9001 ms, diferente dos 29 segundos anteriores;
+é necessário separar os erros do retorno do Lab dos erros sob carga. A amostra atual de
+logs não continha os padrões de falha SMTP, timeout, pool ou thread bloqueada pesquisados.
+Isso não prova ausência de falhas nem determina a causa. O novo perfil leve ainda não foi
+executado; não houve novo seed nem apply nesta investigação.
