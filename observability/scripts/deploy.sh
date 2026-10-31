@@ -101,6 +101,7 @@ fi
 HOMOLOG_API_BASE_URL="$gateway_url" python3 "$observability_dir/scripts/apply-probes.py"
 
 kubectl apply -f "$observability_dir/rules/cluster-alerts.yaml"
+kubectl apply -f "$observability_dir/rules/work-order-alerts.yaml"
 kubectl create configmap oficina-cluster-overview-dashboard \
   --namespace observability \
   --from-file=cluster-overview.json="$observability_dir/dashboards/cluster-overview.json" \

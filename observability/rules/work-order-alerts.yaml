@@ -1,0 +1,29 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: oficina-work-order-alerts
+  namespace: observability
+  labels:
+    release: oficina-monitoring
+spec:
+  groups:
+    - name: oficina.workorders
+      rules:
+        - alert: WorkOrderProcessingFailure
+          expr: sum by(namespace) (increase(workshop_work_order_processing_failures_total[5m])) > 0
+          for: 1m
+          labels:
+            severity: critical
+            service: oficina-api
+          annotations:
+            summary: Falha no processamento de uma OS
+            description: Resposta 5xx em rota de OS. Investigue logs e trace da requisição; erros esperados 4xx não disparam este alerta.
+        - alert: WorkOrderNotificationFailure
+          expr: sum by(namespace) (increase(workshop_integration_calls_total{integration="smtp",outcome="failure"}[5m])) > 0
+          for: 1m
+          labels:
+            severity: warning
+            service: oficina-api
+          annotations:
+            summary: Notificação de OS não entregue
+            description: O SMTP falhou. A operação da OS foi preservada; confira a integração e a necessidade de reenviar a notificação.
