@@ -179,3 +179,10 @@ jobs:
             diagnostic_errors=1
           fi
           exit "$diagnostic_errors"
+
+      - name: Inspect observability rollout and public load balancers
+        run: |
+          kubectl get pods,deployments,statefulsets,services,pvc -n observability -o wide
+          kubectl get events -n observability --sort-by=.metadata.creationTimestamp | tail -n 30
+          aws elb describe-load-balancers --query 'LoadBalancerDescriptions[].{name:LoadBalancerName,scheme:Scheme,hostname:DNSName}' --output json
+          aws elbv2 describe-load-balancers --query 'LoadBalancers[].{name:LoadBalancerName,scheme:Scheme,state:State.Code,hostname:DNSName}' --output json
