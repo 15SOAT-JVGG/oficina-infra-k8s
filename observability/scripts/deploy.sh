@@ -19,7 +19,10 @@ grafana_root_url="$gateway_url/observability/"
 
 # The script intentionally installs the cluster-wide stack once, independent of app environment.
 aws eks update-kubeconfig --name "$cluster_name" --region "$AWS_REGION"
-kubectl create namespace observability --dry-run=client -o yaml | kubectl apply -f -
+# Alloy installs namespaced RBAC in both application environments.
+for namespace in observability homolog production; do
+  kubectl create namespace "$namespace" --dry-run=client -o yaml | kubectl apply -f -
+done
 kubectl create secret generic oficina-grafana-admin \
   --namespace observability \
   --from-literal=admin-user=admin \
