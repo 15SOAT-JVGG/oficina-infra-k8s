@@ -1,48 +1,173 @@
 {
-  "annotations": {"list": []},
+  "annotations": {
+    "list": []
+  },
   "editable": true,
   "graphTooltip": 1,
   "panels": [
     {
-      "type": "stat", "title": "Nós Ready", "id": 1,
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
-      "targets": [{"expr": "sum(kube_node_status_condition{condition=\"Ready\",status=\"true\"})", "refId": "A"}]
-    },
-    {
-      "type": "stat", "title": "Pods não Ready", "id": 2,
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
-      "targets": [{"expr": "sum(kube_pod_status_ready{condition=\"false\",namespace=~\"homolog|production\"})", "refId": "A"}]
-    },
-    {
-      "type": "timeseries", "title": "CPU por pod (cores)", "id": 3,
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
-      "targets": [{"expr": "sum by (namespace, pod) (rate(container_cpu_usage_seconds_total{namespace=~\"homolog|production\",container!=\"\",image!=\"\"}[5m]))", "legendFormat": "{{namespace}} / {{pod}}", "refId": "A"}]
-    },
-    {
-      "type": "timeseries", "title": "Memória working set por pod", "id": 4,
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
-      "targets": [{"expr": "sum by (namespace, pod) (container_memory_working_set_bytes{namespace=~\"homolog|production\",container!=\"\",image!=\"\"})", "legendFormat": "{{namespace}} / {{pod}}", "refId": "A"}]
-    },
-    {
-      "type": "timeseries", "title": "Réplicas desejadas e disponíveis", "id": 5,
-      "datasource": {"type": "prometheus", "uid": "prometheus"},
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 12},
+      "type": "stat",
+      "title": "Nós Ready",
+      "id": 1,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 0
+      },
       "targets": [
-        {"expr": "kube_deployment_spec_replicas{namespace=~\"homolog|production\"}", "legendFormat": "Desejadas {{namespace}}/{{deployment}}", "refId": "A"},
-        {"expr": "kube_deployment_status_replicas_available{namespace=~\"homolog|production\"}", "legendFormat": "Disponíveis {{namespace}}/{{deployment}}", "refId": "B"}
+        {
+          "expr": "sum(kube_node_status_condition{condition=\"Ready\",status=\"true\"})",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Pods não Ready",
+      "id": 2,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 0
+      },
+      "targets": [
+        {
+          "expr": "sum(kube_pod_status_ready{condition=\"false\",namespace=\"$namespace\"})",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "CPU por pod (cores)",
+      "id": 3,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 4
+      },
+      "targets": [
+        {
+          "expr": "sum by (namespace, pod) (rate(container_cpu_usage_seconds_total{namespace=\"$namespace\",container!=\"\",image!=\"\"}[5m]))",
+          "legendFormat": "{{namespace}} / {{pod}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Memória working set por pod",
+      "id": 4,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 4
+      },
+      "targets": [
+        {
+          "expr": "sum by (namespace, pod) (container_memory_working_set_bytes{namespace=\"$namespace\",container!=\"\",image!=\"\"})",
+          "legendFormat": "{{namespace}} / {{pod}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Réplicas desejadas e disponíveis",
+      "id": 5,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 12
+      },
+      "targets": [
+        {
+          "expr": "kube_deployment_spec_replicas{namespace=\"$namespace\"}",
+          "legendFormat": "Desejadas {{namespace}}/{{deployment}}",
+          "refId": "A"
+        },
+        {
+          "expr": "kube_deployment_status_replicas_available{namespace=\"$namespace\"}",
+          "legendFormat": "Disponíveis {{namespace}}/{{deployment}}",
+          "refId": "B"
+        }
       ]
     }
   ],
   "refresh": "30s",
   "schemaVersion": 39,
-  "tags": ["oficina", "kubernetes"],
-  "templating": {"list": []},
-  "time": {"from": "now-6h", "to": "now"},
-  "title": "Oficina - Cluster Kubernetes",
+  "tags": [
+    "oficina",
+    "kubernetes"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": true,
+          "text": "homolog",
+          "value": "homolog"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Ambiente",
+        "name": "namespace",
+        "options": [
+          {
+            "selected": true,
+            "text": "homolog",
+            "value": "homolog"
+          },
+          {
+            "selected": false,
+            "text": "production",
+            "value": "production"
+          }
+        ],
+        "query": "homolog,production",
+        "type": "custom"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "title": "02 - Oficina: infraestrutura",
   "uid": "oficina-kubernetes",
-  "version": 1
+  "version": 2,
+  "links": [
+    {
+      "title": "Visão geral",
+      "type": "link",
+      "url": "/observability/d/oficina-api-jvm",
+      "includeVars": true,
+      "keepTime": true
+    }
+  ]
 }

@@ -34,6 +34,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Checkout application-owned ServiceMonitor contract
+        uses: actions/checkout@v4
+        with:
+          repository: 15SOAT-JVGG/oficina-app
+          ref: f56897c0a4959d1ed3576d15ccc1920d9bd53e24
+          path: .app-observability
+          sparse-checkout: k8s/base/servicemonitor.yaml
+          sparse-checkout-cone-mode: false
+
       - uses: azure/setup-helm@v4
         with:
           version: v3.17.3
@@ -52,6 +61,8 @@ jobs:
           echo "aws_region=$AWS_REGION" >> "$GITHUB_OUTPUT"
 
       - name: Install or upgrade the shared observability stack
+        env:
+          APP_SERVICEMONITOR_MANIFEST: ${{ github.workspace }}/.app-observability/k8s/base/servicemonitor.yaml
         run: observability/scripts/deploy.sh
 
       - name: Publish internal Grafana listener contract

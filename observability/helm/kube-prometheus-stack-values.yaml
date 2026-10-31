@@ -37,6 +37,7 @@ alertmanager:
 
 grafana:
   enabled: true
+  defaultDashboardsEnabled: false
   service:
     type: LoadBalancer
     port: 80
@@ -51,6 +52,8 @@ grafana:
   persistence:
     enabled: false
   grafana.ini:
+    dashboards:
+      default_home_dashboard_path: /tmp/dashboards/api-overview.json
     server:
       root_url: "%(protocol)s://%(domain)s/observability/"
       serve_from_sub_path: true
@@ -66,7 +69,9 @@ grafana:
       enabled: true
       label: grafana_dashboard
       labelValue: "1"
-      searchNamespace: ALL
+      searchNamespace: observability
+      provider:
+        folder: FIAP
     datasources:
       enabled: true
       label: grafana_datasource

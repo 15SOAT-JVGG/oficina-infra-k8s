@@ -17,7 +17,13 @@ def query(expression):
     result = get('/api/datasources/proxy/uid/prometheus/api/v1/query?' + urllib.parse.urlencode({'query': expression}))
     return result.get('data', {}).get('result', [])
 
-print('dashboards', json.dumps([{k: d.get(k) for k in ('uid', 'title', 'folderTitle')} for d in get('/api/search?type=dash-db')], ensure_ascii=False))
+dashboards=get('/api/search?type=dash-db')
+print('dashboards', json.dumps([{k: d.get(k) for k in ('uid', 'title', 'folderTitle')} for d in dashboards], ensure_ascii=False))
+if os.getenv('REQUIRE_SIMPLE') == 'true':
+    assert {d['uid'] for d in dashboards} == {'oficina-api-jvm', 'oficina-kubernetes'}, 'Unexpected dashboard set'
+    home=get('/api/dashboards/home')
+    print('home_dashboard', home.get('dashboard',{}).get('title'))
+    assert home.get('dashboard',{}).get('uid') == 'oficina-api-jvm', 'Unexpected home dashboard'
 print('datasources', json.dumps([{k:d.get(k) for k in ('uid', 'name', 'type')} for d in get('/api/datasources')]))
 for name, expr in {
     'scrape_targets': 'count by(job) (up)',
@@ -43,7 +49,7 @@ for kind, path in {
     except Exception as error:
         print(kind, 'unavailable', type(error).__name__)
 try:
-    path='/api/datasources/proxy/uid/loki/loki/api/v1/query_range?' + urllib.parse.urlencode({'query':'{environment="homolog"}', 'limit':20})
+    path='/api/datasources/proxy/uid/loki/loki/api/v1/query_range?' + urllib.parse.urlencode({'query':'{environment="homolog"}', 'limit':100})
     result=get(path)
     lines=[v[1] for stream in result.get('data',{}).get('result',[]) for v in stream.get('values',[])]
     parsed=[]

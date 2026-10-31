@@ -88,6 +88,18 @@ helm upgrade --install oficina-blackbox prometheus-community/prometheus-blackbox
   --values "$observability_dir/helm/blackbox-values.yaml" \
   --wait --timeout 10m --history-max 10
 
+# The application may have deployed before the ServiceMonitor CRD existed.
+# Reuse the exact app-owned manifest rather than creating a second scrape target.
+if [[ -n "${APP_SERVICEMONITOR_MANIFEST:-}" ]]; then
+  [[ -f "$APP_SERVICEMONITOR_MANIFEST" ]]
+  for namespace in homolog production; do
+    if kubectl get service oficina-mecanica-management --namespace "$namespace" >/dev/null 2>&1; then
+      kubectl apply --namespace "$namespace" --filename "$APP_SERVICEMONITOR_MANIFEST"
+    fi
+  done
+fi
+HOMOLOG_API_BASE_URL="$gateway_url" python3 "$observability_dir/scripts/apply-probes.py"
+
 kubectl apply -f "$observability_dir/rules/cluster-alerts.yaml"
 kubectl create configmap oficina-cluster-overview-dashboard \
   --namespace observability \
