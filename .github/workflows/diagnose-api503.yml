@@ -79,7 +79,10 @@ jobs:
               'smtp_5xx':r'\b5[035][0457]\b',
               'pool_timeout':r'connection.*pool.*timeout|acquisition timeout',
               'blocked_thread':r'blockedthread|thread.*blocked',
-              'database_failure':r'PSQLException|PgException|SQLState'
+              'database_failure':r'PSQLException|PgException|SQLState',
+              'metric_registration':r'MeterRegistration|already registered|Failed.*meter|Error.*meter|Prometheus',
+              'metric_labels_mismatch':r'same set of tag keys|different label names',
+              'invalid_histogram':r'buckets.*increasing|minimumExpectedValue|serviceLevelObjectiveBoundaries' 
           }
           print(json.dumps({key:len(re.findall(pattern,data,re.I)) for key,pattern in patterns.items()}))
           PYTHON
