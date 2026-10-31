@@ -79,7 +79,7 @@ jobs:
               --action-names iam:CreateRole iam:AttachRolePolicy iam:PassRole \
                 iam:CreateOpenIDConnectProvider eks:CreatePodIdentityAssociation eks:CreateAddon \
               --resource-arns "$target_role_arn" "$cluster_arn" \
-              --query 'EvaluationResults[].{action:EvalActionName,resource:ResourceName,decision:EvalDecision}' \
+              --query 'EvaluationResults[].{action:EvalActionName,resource:EvalResourceName,decision:EvalDecision,missingContext:MissingContextValues}' \
               --output json 2>/dev/null)"; then
               jq '.' <<<"$permissions"
             else
