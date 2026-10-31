@@ -1,7 +1,7 @@
 name: Audit Grafana requirement evidence
 on:
   push:
-    branches: [codex/simplify-grafana, codex/http-evidence-guide]
+    branches: [codex/simplify-grafana, codex/http-evidence-guide, codex/phase3-business-dashboards]
   workflow_dispatch:
     inputs:
       verify_simplified:
