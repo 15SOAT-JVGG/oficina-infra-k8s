@@ -2,6 +2,10 @@ name: Publish readable Grafana dashboards
 on:
   push:
     branches: [codex/grafana-readable-main]
+    paths:
+      - observability/dashboards/**
+      - observability/scripts/verify-readable-dashboards.py
+      - .github/workflows/publish-dashboards.yml
   workflow_dispatch:
 permissions:
   contents: read

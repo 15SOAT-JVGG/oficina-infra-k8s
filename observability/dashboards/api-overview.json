@@ -137,9 +137,20 @@
           "unit": "reqps",
           "noValue": "Aguardando métricas HTTP",
           "color": {
-            "mode": "fixed",
-            "fixedColor": "text"
-          }
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "type": "special",
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "Aguardando métricas HTTP",
+                  "color": "gray"
+                }
+              }
+            }
+          ]
         },
         "overrides": []
       },
@@ -181,8 +192,36 @@
           "unit": "percent",
           "noValue": "Aguardando métricas HTTP",
           "color": {
-            "mode": "fixed",
-            "fixedColor": "text"
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "type": "special",
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "Aguardando métricas HTTP",
+                  "color": "gray"
+                }
+              }
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
           }
         },
         "overrides": []
