@@ -1,0 +1,45 @@
+name: Publish readable Grafana dashboards
+on:
+  push:
+    branches: [codex/grafana-readable-main]
+    paths:
+      - observability/dashboards/**
+      - observability/scripts/verify-readable-dashboards.py
+      - .github/workflows/publish-dashboards.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: oficina-observability-cluster
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: homolog
+    timeout-minutes: 5
+    env:
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: ${{ secrets.HOMOLOG_AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.HOMOLOG_AWS_SECRET_ACCESS_KEY }}
+      AWS_SESSION_TOKEN: ${{ secrets.HOMOLOG_AWS_SESSION_TOKEN }}
+      GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: azure/setup-kubectl@c0c8b32d33a5244f1e5947304550403b63930415
+        with:
+          version: v1.34.0
+      - name: Validate identity and publish only dashboard ConfigMaps
+        run: |
+          set -euo pipefail
+          umask 077
+          export KUBECONFIG="$RUNNER_TEMP/dashboard-kubeconfig"
+          trap 'rm -f "$KUBECONFIG"' EXIT
+          [[ "$(aws sts get-caller-identity --query Account --output text)" == 630266487412 ]]
+          aws eks update-kubeconfig --name oficina --region "$AWS_REGION" >/dev/null
+          for dashboard in api cluster; do
+            kubectl create configmap "oficina-$dashboard-overview-dashboard" --namespace observability \
+              --from-file="$dashboard-overview.json=observability/dashboards/$dashboard-overview.json" \
+              --dry-run=client -o yaml | kubectl label --local -f - grafana_dashboard=1 -o yaml | kubectl apply -f -
+          done
+      - name: Verify saved dashboard readability
+        run: python3 observability/scripts/verify-readable-dashboards.py

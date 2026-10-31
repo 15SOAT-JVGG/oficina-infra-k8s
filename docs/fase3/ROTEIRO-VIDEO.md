@@ -71,3 +71,71 @@ Publicar no YouTube/Vimeo como público ou não listado, conferir acesso e dura�
 15 minutos e incluir o link na folha de entrega. O Portal pede um PDF único com links dos
 repositórios, vídeo, documentação e confirmação do avaliador. Os arquivos separados são
 material complementar; não substituem o vídeo nem o PDF único.
+
+## Links dos documentos e fala sugerida
+
+Não precisa ler cada arquivo inteiro no vídeo. Abra o documento, mostre o trecho indicado
+por 10 a 20 segundos e use estas frases como apoio, adaptando para o que está demonstrado.
+
+| Documento | O que mostrar / falar |
+|---|---|
+| [Comece aqui](COMECE-AQUI.md) | “Este é o índice de execução: reúne os acessos, a collection curta, o seed e as evidências das pipelines.” |
+| [Massa pronta](MASSA-PRONTA.md) | “A massa foi criada automaticamente antes da gravação. Cliente, veículo e peça já existem; no Postman vou demonstrar somente login e o ciclo da OS.” |
+| [Arquitetura](ARQUITETURA.md) e [diagrama de componentes](diagramas/componentes.png) | “O Gateway é a entrada HTTPS. A Lambda autentica o cliente e autoriza o JWT; a aplicação está no EKS e persiste no PostgreSQL gerenciado. O Grafana reúne métricas e logs.” |
+| [Sequências](SEQUENCIAS.md), [autenticação](diagramas/autenticacao.png) e [abertura de OS](diagramas/abertura-os.png) | “Aqui mostramos a ordem das chamadas: CPF e token primeiro; depois o acesso autorizado e a transação de abertura da OS.” |
+| [Modelo de dados](MODELO-DE-DADOS.md) e [ER](diagramas/modelo-er.png) | “Cliente e veículo se relacionam às OS; orçamento, itens e estoque mantêm a consistência do atendimento. O documento explica os relacionamentos e a evolução do modelo.” |
+| [RFC-001: nuvem](rfc/001-cloud-gerenciada.md) | “A escolha de AWS e serviços gerenciados reduz a operação manual no laboratório. O documento registra alternativas e limitações do Learner Lab.” |
+| [RFC-002: PostgreSQL](rfc/002-postgresql.md) | “O banco relacional foi escolhido pelas transações e integridade entre OS, orçamento e estoque. A evolução do schema também está documentada.” |
+| [RFC-003: autenticação](rfc/003-autenticacao.md) | “A função valida CPF e cadastro ativo, emite JWT e o Authorizer protege as rotas. A aplicação aplica RBAC; CPF sozinho é uma limitação deste fluxo acadêmico.” |
+| [ADR-001: comunicação](adr/001-comunicacao-e-fronteiras.md) | “Usamos HTTP síncrono no atendimento, com responsabilidades separadas para Gateway, autenticação e aplicação.” |
+| [ADR-002: HPA](adr/002-hpa.md) | “O HPA muda a quantidade de pods conforme CPU e memória. Isso é diferente de aumentar o número de nós.” |
+| [ADR-003: observabilidade](adr/003-observabilidade-no-lab.md) | “A stack é compartilhada e há somente dois dashboards. No Lab o histórico é efêmero; um reinício pode reduzir a janela de dados disponível.” |
+| [Matriz de validação](VALIDACAO.md) | “Esta matriz distingue requisito comprovado, implementação e pendência. Uma pipeline verde não comprova sozinha todos os requisitos funcionais.” |
+| [Investigação de 503](INVESTIGACAO-503.md) | “Registramos as falhas de carga e as hipóteses sem esconder resultados. Um seed aprovado não comprova estabilidade sob carga.” |
+| [Folha de entrega](ENTREGA.md) | “Ao concluir a gravação, este documento reúne os quatro repositórios, o vídeo, a documentação e o acesso do avaliador.” |
+
+## Links das pipelines dos quatro repositórios
+
+| Repositório / pipeline | O que faz | Fala sugerida |
+|---|---|---|
+| [App: CI](https://github.com/15SOAT-JVGG/oficina-app/actions/workflows/ci.yml) | Build e testes Java/Quarkus, qualidade/cobertura, segurança e validação dos manifestos | “O PR passa pelos testes e verificações antes da entrega.” |
+| [App: deploy](https://github.com/15SOAT-JVGG/oficina-app/actions/workflows/deploy.yml) | Em homolog/production, valida, publica imagem no ECR, aplica no cluster, espera readiness e testa Gateway/Authorizer/docs | “Aqui a imagem é identificada pelo commit e o rollout termina com testes pelo endereço público.” |
+| [Lambda: CI](https://github.com/15SOAT-JVGG/oficina-lambda-auth/actions/workflows/ci.yml) | Formatação, go vet, testes unitários e de integração Go | “A função tem verificação própria, independente da aplicação.” |
+| [Lambda: Terraform / deploy](https://github.com/15SOAT-JVGG/oficina-lambda-auth/actions/workflows/terraform.yml) | Compila autenticação e Authorizer, valida/plana/aplica Terraform e reconcilia o Gateway | “A publicação da função também atualiza os contratos usados pelo Gateway.” |
+| [Lambda: validação pelo Gateway](https://github.com/15SOAT-JVGG/oficina-lambda-auth/actions/workflows/validate-authorizer-gateway.yml) | Exercita login CPF, JWT e negativas de autorização via API pública | “Validamos autorização no caminho real, com respostas permitidas e negadas.” |
+| [Kubernetes: Terraform](https://github.com/15SOAT-JVGG/oficina-infra-k8s/actions/workflows/terraform.yml) | Valida Terraform e testes de convergência; aplica infraestrutura nas branches de ambiente | “O cluster e seus recursos de infraestrutura são versionados neste repositório.” |
+| [Kubernetes: reconciliação Gateway](https://github.com/15SOAT-JVGG/oficina-infra-k8s/actions/workflows/reconcile.yml) | Consome contratos publicados e reconcilia as integrações do Gateway | “Este passo mantém aplicação e autenticação conectadas ao Gateway.” |
+| [Kubernetes: observabilidade](https://github.com/15SOAT-JVGG/oficina-infra-k8s/actions/workflows/observability.yml) | Instala/reconcilia a stack de monitoramento e publica a rota privada do Grafana | “O monitoramento é provisionado separadamente da imagem da aplicação.” |
+| [Kubernetes: dashboards](https://github.com/15SOAT-JVGG/oficina-infra-k8s/actions/workflows/publish-dashboards.yml) | Atualiza somente os ConfigMaps dos dois dashboards e verifica a configuração salva | “Podemos melhorar os painéis sem reinstalar a stack nem executar Terraform apply.” |
+| [Banco: Terraform](https://github.com/15SOAT-JVGG/oficina-infra-db/actions/workflows/terraform.yml) | Formatação/validação, plano e apply do RDS e da rede do banco por ambiente | “O banco gerenciado tem infraestrutura e pipeline próprias. As migrations da aplicação são outro mecanismo.” |
+
+### Exemplos prontos para abrir na gravação
+
+- [PR aprovado com a massa exportável](https://github.com/15SOAT-JVGG/oficina-app/pull/87).
+- [Deploy da aplicação aprovado com smokes](https://github.com/15SOAT-JVGG/oficina-app/actions/runs/41158248740).
+- [Deploy da Lambda aprovado](https://github.com/15SOAT-JVGG/oficina-lambda-auth/actions/runs/40991742239).
+- [Apply do banco aprovado](https://github.com/15SOAT-JVGG/oficina-infra-db/actions/runs/40980315346).
+- [Seed aprovado desta massa](https://github.com/15SOAT-JVGG/oficina-app/actions/runs/41212663163).
+
+Mostrar execução concluída e sua branch/commit. Não disparar apply de banco ou cluster
+somente para preencher tempo de vídeo. Os exemplos são de homologação; não afirmar
+execução comprovada de produção quando houver apenas configuração do gatilho.
+
+## Action para demonstrar aumento de réplicas
+
+[Abrir Homolog - seed and HPA simulation](https://github.com/15SOAT-JVGG/oficina-app/actions/workflows/homolog-simulation.yml).
+
+1. Run workflow, branch main.
+2. operation=load_only: a massa já está pronta; não precisa criar outro lote.
+3. duration_seconds=180, concurrency=2. work_orders é ignorado nesse modo.
+4. Abrir o [dashboard Infraestrutura](https://dcs5hfax0e.execute-api.us-east-1.amazonaws.com/observability/d/oficina-kubernetes)
+   e acompanhar CPU, memória e réplicas desejadas/disponíveis. Depois esperar a recuperação.
+
+Fala: “Esta action gera logins válidos com carga gradual. O HPA observa o consumo e decide
+se precisa criar mais pods. Ao final, a carga para e acompanhamos a redução. Não estamos
+alterando réplicas manualmente.”
+
+O perfil leve tem limite global de quatro requisições/s. Aumentar pods não é garantido com
+qualquer carga: depende da utilização e do estado inicial. Não elevar agressivamente os
+valores para forçar uma cena. Se ocorrer 503 ou falha no orçamento de erros, interromper
+a demonstração e consultar o resumo. Não apresentar a execução reprovada como sucesso.

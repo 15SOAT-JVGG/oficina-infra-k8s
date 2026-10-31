@@ -72,11 +72,13 @@ for file_index,name in enumerate(order):
                 i+=1
             n=max(len(r) for r in rows);ratios={2:[.28,.72],3:[.27,.18,.55],4:[.2,.2,.35,.25]}.get(n,[1/n]*n)
             if rows[0][0]=='Tempo': ratios=[.17,.43,.40]
+            if rows[0][0]=='Repositório / pipeline': ratios=[.26,.39,.35]
             data=[[Paragraph(inline(c,path.parent),styles['CellCustom']) for c in r+['']*(n-len(r))] for r in rows]
             table=LongTable(data,colWidths=[(pw-88)*v for v in ratios],repeatRows=1,hAlign='LEFT')
             table.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,0),colors.HexColor('#e0ebf4')),('VALIGN',(0,0),(-1,-1),'TOP'),('ROWBACKGROUNDS',(0,1),(-1,-1),[colors.white,colors.HexColor('#f6f8fb')]),('LINEBELOW',(0,0),(-1,0),.6,colors.HexColor('#8ea8bd')),('BOTTOMPADDING',(0,0),(-1,-1),6),('TOPPADDING',(0,0),(-1,-1),6)]))
             story.extend([table,Spacer(1,9)]);continue
         if line.startswith('# '):story.append(Paragraph(inline(line[2:],path.parent),styles['H1Custom']));i+=1;continue
+        if line.startswith('### '):story.append(Paragraph(inline(line[4:],path.parent),styles['H2Custom']));i+=1;continue
         if line.startswith('## '):story.append(Paragraph(inline(line[3:],path.parent),styles['H2Custom']));i+=1;continue
         if line.startswith('- ') or re.match(r'^\d+\. ',line):
             story.append(Paragraph(inline(line,path.parent),styles['Text']));i+=1;continue
