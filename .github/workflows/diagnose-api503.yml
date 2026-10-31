@@ -56,3 +56,30 @@ jobs:
             aws elbv2 describe-target-health --target-group-arn "$target_group" \
               --query 'TargetHealthDescriptions[].{zone:Target.AvailabilityZone,state:TargetHealth.State,reason:TargetHealth.Reason}' --output json
           done
+
+      - name: Classify application failures without printing log contents
+        run: |
+          set -euo pipefail
+          umask 077
+          export KUBECONFIG="$RUNNER_TEMP/diagnostic-kubeconfig"
+          log_file="$RUNNER_TEMP/app-diagnostic.log"
+          trap 'rm -f "$KUBECONFIG" "$log_file"' EXIT
+          aws eks update-kubeconfig --name oficina --region "$AWS_REGION" >/dev/null
+          kubectl get hpa oficina-mecanica -n homolog -o json | jq '{current:.status.currentReplicas,desired:.status.desiredReplicas,metrics:.status.currentMetrics}'
+          kubectl logs -n homolog -l app.kubernetes.io/name=oficina-mecanica --all-containers --since=45m --tail=1500 --max-log-requests=8 > "$log_file"
+          python3 - "$log_file" <<'PYTHON'
+          import json, re, sys
+          data=open(sys.argv[1]).read()
+          patterns={
+              'notification_failed':r'Notificacao nao entregue',
+              'smtp_mentions':r'smtp',
+              'timeout_mentions':r'time.?out|timed out',
+              'mail_rate_limit':r'too many emails|rate.?limit|sending limit|email limit',
+              'smtp_4xx':r'\b4[125][012]\b',
+              'smtp_5xx':r'\b5[035][0457]\b',
+              'pool_timeout':r'connection.*pool.*timeout|acquisition timeout',
+              'blocked_thread':r'blockedthread|thread.*blocked',
+              'database_failure':r'PSQLException|PgException|SQLState'
+          }
+          print(json.dumps({key:len(re.findall(pattern,data,re.I)) for key,pattern in patterns.items()}))
+          PYTHON
