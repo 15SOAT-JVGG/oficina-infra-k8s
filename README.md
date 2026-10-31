@@ -1,3 +1,5 @@
+[Fase 3: comece aqui - Postman, massas, PDFs, seed e demonstração](docs/fase3/COMECE-AQUI.md)
+
 # oficina-infra-k8s
 
 Infraestrutura Kubernetes da **Oficina Mecânica** (FIAP 16SOAT — Tech Challenge Fase 3), provisionada com

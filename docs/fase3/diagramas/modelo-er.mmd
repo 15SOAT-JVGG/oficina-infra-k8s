@@ -1,0 +1,64 @@
+erDiagram
+  CUSTOMER { uuid customer_id PK
+    string document UK
+    boolean active }
+  VEHICLE { uuid vehicle_id PK
+    uuid customer_id FK
+    string license_plate UK }
+  WORKER { uuid worker_id PK
+    string email UK
+    string profile
+    boolean active }
+  WORK_ORDER { uuid work_order_id PK
+    uuid customer_id FK
+    uuid vehicle_id FK
+    uuid assigned_worker_id FK
+    string status
+    datetime opened_at
+    datetime closed_at
+    datetime cancelled_at }
+  WORK_ORDER_HISTORY { uuid work_order_history_id PK
+    uuid work_order_id FK
+    string previous_status
+    string new_status
+    datetime changed_at }
+  ESTIMATE { uuid estimate_id PK
+    uuid work_order_id FK
+    string status
+    decimal total_amount }
+  ESTIMATE_ITEM { uuid estimate_item_id PK
+    uuid estimate_id FK
+    uuid part_id FK
+    int quantity
+    decimal unit_price }
+  PARTS { uuid part_id PK
+    int stock_quantity
+    long version }
+  SERVICE_ITEM { uuid service_item_id PK
+    decimal base_price
+    boolean active }
+  WORK_ORDER_SERVICE { uuid work_order_service_id PK
+    uuid work_order_id FK
+    uuid service_item_id FK
+    decimal price }
+  ESTIMATE_DECISION_TOKEN { uuid estimate_decision_token_id PK
+    uuid work_order_id
+    uuid estimate_id
+    datetime expires_at
+    datetime consumed_at }
+  APP_USERS { long id PK
+    string username UK
+    string role
+    boolean active }
+  CUSTOMER |o--o{ VEHICLE : possui
+  CUSTOMER ||--o{ WORK_ORDER : solicita
+  VEHICLE ||--o{ WORK_ORDER : recebe
+  WORKER |o--o{ WORK_ORDER : atende
+  WORK_ORDER ||--o{ WORK_ORDER_HISTORY : registra
+  WORK_ORDER ||--o{ ESTIMATE : gera
+  ESTIMATE ||--o{ ESTIMATE_ITEM : contem
+  PARTS ||--o{ ESTIMATE_ITEM : referencia
+  WORK_ORDER ||--o{ WORK_ORDER_SERVICE : inclui
+  SERVICE_ITEM |o--o{ WORK_ORDER_SERVICE : origina
+  WORK_ORDER ||..o{ ESTIMATE_DECISION_TOKEN : vinculo_logico
+  ESTIMATE ||..o{ ESTIMATE_DECISION_TOKEN : vinculo_logico

@@ -1,0 +1,33 @@
+flowchart TB
+  U[Cliente e funcionário] -->|HTTPS| G[API Gateway HTTP]
+  G -->|POST /v1/auth/customer| A[Lambda customer-auth]
+  G -->|Token em rota protegida| J[Lambda jwt-authorizer]
+  subgraph VPC[VPC AWS / us-east-1]
+    A -->|TLS PostgreSQL| DB[(RDS PostgreSQL 16)]
+    G --> VL[VPC Link]
+    VL --> N[NLB interno da API]
+    N --> API[API Quarkus no EKS / 8080]
+    API --> DB
+    VL --> NG[NLB interno do Grafana]
+    NG --> GR[Grafana / login próprio]
+    subgraph OBS[Namespace observability]
+      GR --> P[Prometheus]
+      GR --> L[Loki]
+      GR --> T[Tempo]
+      AL[Alloy] --> L
+      AL --> T
+      B[Blackbox]
+    end
+    P -->|/q/metrics / 9000 ClusterIP| API
+    API -. OTLP .-> AL
+    AL -. coleta logs Kubernetes .-> API
+    P --> B
+  end
+  B -->|sondagem pública| G
+  A -. logs .-> CW[CloudWatch]
+  J -. logs .-> CW
+  G -. logs .-> CW
+  GH[GitHub Actions / 4 repos] --> ECR[ECR / imagens]
+  ECR --> API
+  GH --> TF[Terraform / Helm / Kustomize]
+  TF --> S3[(S3 state e contratos)]

@@ -1,0 +1,512 @@
+{
+  "info": {
+    "name": "FIAP Fase 3 - demonstração guiada",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Massa já criada pelo seed. Apenas login, ciclo da OS e testes de sucesso/erro. Uma iteração, delay de 6000ms. Cada iteração cria somente uma nova OS usando cliente/veículo/peça do seed. Importe o ambiente Massa Pronta e preencha adminPassword localmente. Não é teste de carga."
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (pm.info.requestName === '01 - Login funcionário') {",
+          " for (const key of ['adminPassword','demoCpf','customerId','vehicleId','partId']) {",
+          "  if (!pm.environment.get(key)) throw new Error('Importe o ambiente Massa Pronta do seed e preencha adminPassword localmente. Falta: '+key);",
+          " }",
+          " for (const key of ['adminToken','customerToken','workOrderId','estimateId']) pm.environment.set(key,'');",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - Login funcionário",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/v1/auth/login",
+        "auth": {
+          "type": "noauth"
+        },
+        "description": "Execute na ordem. Em falha, o Runner interrompe; não repita uma escrita sem conferir o resultado.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{adminUsername}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error('Fluxo interrompido: HTTP inesperado; não repetir escritas automaticamente.'); }",
+              "const value = pm.response.json().token;",
+              "pm.expect(value).to.be.a('string').and.not.empty;",
+              "pm.environment.set('adminToken',value);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Abrir OS - RECEIVED",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/v1/work-orders",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{adminToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "description": "Execute na ordem. Em falha, o Runner interrompe; não repita uma escrita sem conferir o resultado.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"vehicleId\": \"{{vehicleId}}\",\n  \"description\": \"{{demoName}} - demonstração Fase 3\",\n  \"priority\": \"MEDIUM\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+              "if (pm.response.code !== 201) { pm.execution.setNextRequest(null); throw new Error('Fluxo interrompido: HTTP inesperado; não repetir escritas automaticamente.'); }",
+              "const value = pm.response.json().workOrder.workOrderId;",
+              "pm.expect(value).to.be.a('string').and.not.empty;",
+              "pm.environment.set('workOrderId',value);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Iniciar diagnóstico - DIAGNOSIS",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/v1/work-orders/{{workOrderId}}/status",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{adminToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "description": "Execute na ordem. Em falha, o Runner interrompe; não repita uma escrita sem conferir o resultado.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"DIAGNOSIS\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error('Fluxo interrompido: HTTP inesperado; não repetir escritas automaticamente.'); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - Gerar orçamento - WAITING_APPROVAL",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/v1/work-orders/{{workOrderId}}/estimate",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{adminToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "description": "Execute na ordem. Em falha, o Runner interrompe; não repita uma escrita sem conferir o resultado.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"items\": [\n    {\n      \"partId\": \"{{partId}}\",\n      \"quantity\": 1\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+              "if (pm.response.code !== 201) { pm.execution.setNextRequest(null); throw new Error('Fluxo interrompido: HTTP inesperado; não repetir escritas automaticamente.'); }",
+              "const value = pm.response.json().estimateId;",
+              "pm.expect(value).to.be.a('string').and.not.empty;",
+              "pm.environment.set('estimateId',value);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - Login cliente por CPF",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/v1/auth/customer",
+        "auth": {
+          "type": "noauth"
+        },
+        "description": "Execute na ordem. Em falha, o Runner interrompe; não repita uma escrita sem conferir o resultado.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"cpf\": \"{{demoCpf}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error('Fluxo interrompido: HTTP inesperado; não repetir escritas automaticamente.'); }",
+              "const value = pm.response.json().token;",
+              "pm.expect(value).to.be.a('string').and.not.empty;",
+              "pm.environment.set('customerToken',value);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 - Cliente consulta suas OS",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/v1/me/work-orders",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{customerToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "description": "Execute na ordem. Em falha, o Runner interrompe; não repita uma escrita sem conferir o resultado."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error('Fluxo interrompido: HTTP inesperado; não repetir escritas automaticamente.'); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 - Sem token - 401",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/v1/me/work-orders",
+        "auth": {
+          "type": "noauth"
+        },
+        "description": "Execute na ordem. Em falha, o Runner interrompe; não repita uma escrita sem conferir o resultado."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+              "if (pm.response.code !== 401) { pm.execution.setNextRequest(null); throw new Error('Fluxo interrompido: HTTP inesperado; não repetir escritas automaticamente.'); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 - CUSTOMER sem permissão operacional - 403",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/v1/work-orders",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{customerToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "description": "Execute na ordem. Em falha, o Runner interrompe; não repita uma escrita sem conferir o resultado."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 403', () => pm.response.to.have.status(403));",
+              "if (pm.response.code !== 403) { pm.execution.setNextRequest(null); throw new Error('Fluxo interrompido: HTTP inesperado; não repetir escritas automaticamente.'); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 - Cliente aprova orçamento - IN_PROGRESS",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/v1/me/work-orders/{{workOrderId}}/estimate/{{estimateId}}/approve",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{customerToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "description": "Execute na ordem. Em falha, o Runner interrompe; não repita uma escrita sem conferir o resultado."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error('Fluxo interrompido: HTTP inesperado; não repetir escritas automaticamente.'); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 - Funcionário conclui - COMPLETED",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/v1/work-orders/{{workOrderId}}/close",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{adminToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "description": "Execute na ordem. Em falha, o Runner interrompe; não repita uma escrita sem conferir o resultado.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"finalValue\": 50\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error('Fluxo interrompido: HTTP inesperado; não repetir escritas automaticamente.'); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11 - Entregar veículo - DELIVERED",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/v1/work-orders/{{workOrderId}}/status",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{adminToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "description": "Execute na ordem. Em falha, o Runner interrompe; não repita uma escrita sem conferir o resultado.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"DELIVERED\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error('Fluxo interrompido: HTTP inesperado; não repetir escritas automaticamente.'); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "12 - Consultar OS final",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/v1/work-orders/{{workOrderId}}",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{adminToken}}",
+              "type": "string"
+            }
+          ]
+        },
+        "description": "Execute na ordem. Em falha, o Runner interrompe; não repita uma escrita sem conferir o resultado."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code !== 200) { pm.execution.setNextRequest(null); throw new Error('Fluxo interrompido: HTTP inesperado; não repetir escritas automaticamente.'); }",
+              "pm.test('Estado final DELIVERED', () => pm.expect(pm.response.json().status).to.eql('DELIVERED')); "
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
