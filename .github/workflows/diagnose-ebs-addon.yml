@@ -74,6 +74,27 @@ jobs:
             caller_role_arn="arn:aws:iam::${account_id}:role/${BASH_REMATCH[1]}"
             target_role_arn="arn:aws:iam::${account_id}:role/AmazonEKS_EBS_CSI_DriverRole"
             cluster_arn="arn:aws:eks:${AWS_REGION}:${account_id}:cluster/oficina"
+            echo 'Simulating IAM role and policy operations on the exact target role.'
+            for action in iam:CreateRole iam:AttachRolePolicy iam:PassRole \
+              iam:UpdateAssumeRolePolicy iam:PutRolePolicy; do
+              resource_arn="$target_role_arn"
+              [[ "$action" != iam:CreateRole ]] || resource_arn='*'
+              aws iam simulate-principal-policy \
+                --policy-source-arn "$caller_role_arn" \
+                --action-names "$action" \
+                --resource-arns "$resource_arn" \
+                --query 'EvaluationResults[].{action:EvalActionName,resource:EvalResourceName,decision:EvalDecision,missingContext:MissingContextValues}' \
+                --output json || echo "Simulation unavailable for $action."
+            done
+            echo 'Simulating EKS pod identity operations on the cluster.'
+            for action in eks:CreatePodIdentityAssociation eks:CreateAddon eks:UpdateAddon; do
+              aws iam simulate-principal-policy \
+                --policy-source-arn "$caller_role_arn" \
+                --action-names "$action" \
+                --resource-arns "$cluster_arn" \
+                --query 'EvaluationResults[].{action:EvalActionName,resource:EvalResourceName,decision:EvalDecision,missingContext:MissingContextValues}' \
+                --output json || echo "Simulation unavailable for $action."
+            done
             if permissions="$(aws iam simulate-principal-policy \
               --policy-source-arn "$caller_role_arn" \
               --action-names iam:CreateRole iam:AttachRolePolicy iam:PassRole \
