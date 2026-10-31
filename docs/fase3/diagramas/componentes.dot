@@ -30,6 +30,6 @@ api->db[label="persistência"];
 grafana->prom;grafana->loki;grafana->tempo;
 prom->api[label="scrape 9000",style=dashed];prom->bb[style=dashed];bb->gw[label="sondagem",style=dashed,constraint=false];
 api->alloy[label="OTLP / logs",style=dashed];alloy->loki;alloy->tempo;
-auth->cw[style=dashed];jwt->cw[style=dashed];
+auth->cw[style=dashed];jwt->cw[style=dashed];gw->cw[style=dashed,constraint=false];
 {rank=same;auth;jwt;link;}
 }

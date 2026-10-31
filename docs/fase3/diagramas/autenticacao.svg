@@ -1,26 +1,26 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="1060" viewBox="0 0 1500 1060"><rect width="100%" height="100%" fill="white"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="1220" viewBox="0 0 1500 1220"><rect width="100%" height="100%" fill="white"/>
 <text x="750.0" y="52" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="27" font-weight="bold" fill="#17324d">Autenticação por CPF e consumo protegido</text>
 <rect x="18.0" y="85" width="224" height="69" rx="9" fill="#e8f1f9" stroke="#829bb3"/>
 <text x="130.0" y="115" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="bold" fill="#17324d">Cliente</text>
-<line x1="130.0" y1="158" x2="130.0" y2="970" stroke="#b3c2cf" stroke-width="2" stroke-dasharray="6 6"/>
+<line x1="130.0" y1="158" x2="130.0" y2="1130" stroke="#b3c2cf" stroke-width="2" stroke-dasharray="6 6"/>
 <rect x="266.0" y="85" width="224" height="69" rx="9" fill="#e8f1f9" stroke="#829bb3"/>
 <text x="378.0" y="115" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="bold" fill="#17324d">API Gateway</text>
-<line x1="378.0" y1="158" x2="378.0" y2="970" stroke="#b3c2cf" stroke-width="2" stroke-dasharray="6 6"/>
+<line x1="378.0" y1="158" x2="378.0" y2="1130" stroke="#b3c2cf" stroke-width="2" stroke-dasharray="6 6"/>
 <rect x="514.0" y="85" width="224" height="69" rx="9" fill="#e8f1f9" stroke="#829bb3"/>
 <text x="626.0" y="115" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="bold" fill="#17324d">Lambda</text>
 <text x="626.0" y="138" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="bold" fill="#17324d">customer-auth</text>
-<line x1="626.0" y1="158" x2="626.0" y2="970" stroke="#b3c2cf" stroke-width="2" stroke-dasharray="6 6"/>
+<line x1="626.0" y1="158" x2="626.0" y2="1130" stroke="#b3c2cf" stroke-width="2" stroke-dasharray="6 6"/>
 <rect x="762.0" y="85" width="224" height="69" rx="9" fill="#e8f1f9" stroke="#829bb3"/>
 <text x="874.0" y="115" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="bold" fill="#17324d">RDS</text>
 <text x="874.0" y="138" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="bold" fill="#17324d">PostgreSQL</text>
-<line x1="874.0" y1="158" x2="874.0" y2="970" stroke="#b3c2cf" stroke-width="2" stroke-dasharray="6 6"/>
+<line x1="874.0" y1="158" x2="874.0" y2="1130" stroke="#b3c2cf" stroke-width="2" stroke-dasharray="6 6"/>
 <rect x="1010.0" y="85" width="224" height="69" rx="9" fill="#e8f1f9" stroke="#829bb3"/>
 <text x="1122.0" y="115" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="bold" fill="#17324d">Lambda</text>
 <text x="1122.0" y="138" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="bold" fill="#17324d">jwt-authorizer</text>
-<line x1="1122.0" y1="158" x2="1122.0" y2="970" stroke="#b3c2cf" stroke-width="2" stroke-dasharray="6 6"/>
+<line x1="1122.0" y1="158" x2="1122.0" y2="1130" stroke="#b3c2cf" stroke-width="2" stroke-dasharray="6 6"/>
 <rect x="1258.0" y="85" width="224" height="69" rx="9" fill="#e8f1f9" stroke="#829bb3"/>
 <text x="1370.0" y="115" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="bold" fill="#17324d">API Quarkus</text>
-<line x1="1370.0" y1="158" x2="1370.0" y2="970" stroke="#b3c2cf" stroke-width="2" stroke-dasharray="6 6"/>
+<line x1="1370.0" y1="158" x2="1370.0" y2="1130" stroke="#b3c2cf" stroke-width="2" stroke-dasharray="6 6"/>
 <rect x="141.390625" y="158" width="225.21875" height="53" fill="white"/>
 <text x="254.0" y="178" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">1. POST</text>
 <text x="254.0" y="201" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">/v1/auth/customer: CPF</text>
@@ -39,30 +39,41 @@
 <text x="750.0" y="442" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">4. Existência e status</text>
 <line x1="874.0" y1="455" x2="626.0" y2="455" stroke="#245a86" stroke-width="2"/>
 <polygon points="626.0,455 638.0,449 638.0,461" fill="#245a86"/>
-<rect x="195.609375" y="502" width="364.78125" height="29" fill="white"/>
-<text x="378.0" y="522" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">5. Cliente ativo: 200 + JWT CUSTOMER</text>
-<line x1="626.0" y1="535" x2="130.0" y2="535" stroke="#245a86" stroke-width="2"/>
-<polygon points="130.0,535 142.0,529 142.0,541" fill="#245a86"/>
-<rect x="155.046875" y="558" width="197.90625" height="53" fill="white"/>
-<text x="254.0" y="578" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">6. GET /v1/me/work-</text>
-<text x="254.0" y="601" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">orders + Bearer</text>
-<line x1="130.0" y1="615" x2="378.0" y2="615" stroke="#245a86" stroke-width="2"/>
-<polygon points="378.0,615 366.0,609 366.0,621" fill="#245a86"/>
-<rect x="562.296875" y="662" width="375.40625" height="29" fill="white"/>
-<text x="750.0" y="682" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">7. Validar assinatura / issuer / expiração</text>
-<line x1="378.0" y1="695" x2="1122.0" y2="695" stroke="#245a86" stroke-width="2"/>
-<polygon points="1122.0,695 1110.0,689 1110.0,701" fill="#245a86"/>
-<rect x="653.2578125" y="742" width="193.484375" height="29" fill="white"/>
-<text x="750.0" y="762" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">8. Permitir ou negar</text>
-<line x1="1122.0" y1="775" x2="378.0" y2="775" stroke="#245a86" stroke-width="2"/>
-<polygon points="378.0,775 390.0,769 390.0,781" fill="#245a86"/>
-<rect x="658.65625" y="822" width="430.6875" height="29" fill="white"/>
-<text x="874.0" y="842" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">9. Encaminhar; API aplica RBAC e propriedade</text>
-<line x1="378.0" y1="855" x2="1370.0" y2="855" stroke="#245a86" stroke-width="2"/>
-<polygon points="1370.0,855 1358.0,849 1358.0,861" fill="#245a86"/>
-<rect x="583.4921875" y="902" width="333.015625" height="29" fill="white"/>
-<text x="750.0" y="922" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">10. Resposta do recurso autorizado</text>
-<line x1="1370.0" y1="935" x2="130.0" y2="935" stroke="#245a86" stroke-width="2"/>
-<polygon points="130.0,935 142.0,929 142.0,941" fill="#245a86"/>
-<text x="750.0" y="1013" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="17" font-weight="normal" fill="#17324d">CPF inválido/ausente/inativo: sem token. Ausência de Bearer pode ser recusada no Gateway com 401.</text>
+<rect x="393.25" y="478" width="217.5" height="53" fill="white"/>
+<text x="502.0" y="498" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">5. Cliente ativo: 200 +</text>
+<text x="502.0" y="521" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">JWT CUSTOMER</text>
+<line x1="626.0" y1="535" x2="378.0" y2="535" stroke="#245a86" stroke-width="2"/>
+<polygon points="378.0,535 390.0,529 390.0,541" fill="#245a86"/>
+<rect x="153.265625" y="558" width="201.46875" height="53" fill="white"/>
+<text x="254.0" y="578" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">6. Devolver token ao</text>
+<text x="254.0" y="601" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">cliente</text>
+<line x1="378.0" y1="615" x2="130.0" y2="615" stroke="#245a86" stroke-width="2"/>
+<polygon points="130.0,615 142.0,609 142.0,621" fill="#245a86"/>
+<rect x="155.046875" y="638" width="197.90625" height="53" fill="white"/>
+<text x="254.0" y="658" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">7. GET /v1/me/work-</text>
+<text x="254.0" y="681" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">orders + Bearer</text>
+<line x1="130.0" y1="695" x2="378.0" y2="695" stroke="#245a86" stroke-width="2"/>
+<polygon points="378.0,695 366.0,689 366.0,701" fill="#245a86"/>
+<rect x="562.296875" y="742" width="375.40625" height="29" fill="white"/>
+<text x="750.0" y="762" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">8. Validar assinatura / issuer / expiração</text>
+<line x1="378.0" y1="775" x2="1122.0" y2="775" stroke="#245a86" stroke-width="2"/>
+<polygon points="1122.0,775 1110.0,769 1110.0,781" fill="#245a86"/>
+<rect x="653.2578125" y="822" width="193.484375" height="29" fill="white"/>
+<text x="750.0" y="842" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">9. Permitir ou negar</text>
+<line x1="1122.0" y1="855" x2="378.0" y2="855" stroke="#245a86" stroke-width="2"/>
+<polygon points="378.0,855 390.0,849 390.0,861" fill="#245a86"/>
+<rect x="652.9296875" y="902" width="442.140625" height="29" fill="white"/>
+<text x="874.0" y="922" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">10. Encaminhar; API aplica RBAC e propriedade</text>
+<line x1="378.0" y1="935" x2="1370.0" y2="935" stroke="#245a86" stroke-width="2"/>
+<polygon points="1370.0,935 1358.0,929 1358.0,941" fill="#245a86"/>
+<rect x="707.4921875" y="982" width="333.015625" height="29" fill="white"/>
+<text x="874.0" y="1002" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">11. Resposta do recurso autorizado</text>
+<line x1="1370.0" y1="1015" x2="378.0" y2="1015" stroke="#245a86" stroke-width="2"/>
+<polygon points="378.0,1015 390.0,1009 390.0,1021" fill="#245a86"/>
+<rect x="134.0234375" y="1038" width="239.953125" height="53" fill="white"/>
+<text x="254.0" y="1058" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">12. Devolver resposta ao</text>
+<text x="254.0" y="1081" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">cliente</text>
+<line x1="378.0" y1="1095" x2="130.0" y2="1095" stroke="#245a86" stroke-width="2"/>
+<polygon points="130.0,1095 142.0,1089 142.0,1101" fill="#245a86"/>
+<text x="750.0" y="1173" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="17" font-weight="normal" fill="#17324d">CPF inválido/ausente/inativo: sem token. Ausência de Bearer pode ser recusada no Gateway com 401.</text>
 </svg>

@@ -11,15 +11,22 @@ sequenceDiagram
   A->>DB: Consultar cliente e active
   DB-->>A: Existência e status
   alt Cliente ativo
-    A-->>C: 200 JWT RS256 / CUSTOMER
+    A-->>G: 200 JWT RS256 / CUSTOMER
+    G-->>C: Devolver token
     C->>G: GET /v1/me/work-orders + Bearer
     G->>J: Validar JWT REQUEST 2.0
     J-->>G: Permitir ou negar
-    G->>API: Encaminhar quando permitido
-    API->>API: RBAC e vínculo ao cliente
-    API-->>C: 200 ou recusa de domínio
+    alt Token aceito
+      G->>API: Encaminhar quando permitido
+      API->>API: RBAC e vínculo ao cliente
+      API-->>G: 200 ou recusa de domínio
+      G-->>C: Devolver resposta
+    else Token recusado
+      G-->>C: 403 sem encaminhar à API
+    end
   else CPF inválido, ausente ou inativo
-    A-->>C: Erro sem token
+    A-->>G: Erro sem token
+    G-->>C: Devolver erro
   end
   Note over G,J: Sem identidade pode resultar em 401 sem invocar a Lambda
   Note over G,API: Token aceito não concede permissão operacional a CUSTOMER

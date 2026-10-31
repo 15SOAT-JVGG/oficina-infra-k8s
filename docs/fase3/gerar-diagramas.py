@@ -36,7 +36,7 @@ api->db[label="persistência"];
 grafana->prom;grafana->loki;grafana->tempo;
 prom->api[label="scrape 9000",style=dashed];prom->bb[style=dashed];bb->gw[label="sondagem",style=dashed,constraint=false];
 api->alloy[label="OTLP / logs",style=dashed];alloy->loki;alloy->tempo;
-auth->cw[style=dashed];jwt->cw[style=dashed];
+auth->cw[style=dashed];jwt->cw[style=dashed];gw->cw[style=dashed,constraint=false];
 {rank=same;auth;jwt;link;}
 }
 '''
@@ -102,7 +102,7 @@ def sequence(name,title,actors,events,footer):
  text(w/2,h-64,footer,17)
  svg.append('</svg>');(root/f'{name}.svg').write_text('\n'.join(svg));im.save(root/f'{name}.png')
 sequence('autenticacao','Autenticação por CPF e consumo protegido',['Cliente','API Gateway','Lambda\ncustomer-auth','RDS\nPostgreSQL','Lambda\njwt-authorizer','API Quarkus'],[
-(0,1,'POST /v1/auth/customer: CPF'),(1,2,'Integração pública'),(2,3,'Consultar cliente e active'),(3,2,'Existência e status'),(2,0,'Cliente ativo: 200 + JWT CUSTOMER'),(0,1,'GET /v1/me/work-orders + Bearer'),(1,4,'Validar assinatura / issuer / expiração'),(4,1,'Permitir ou negar'),(1,5,'Encaminhar; API aplica RBAC e propriedade'),(5,0,'Resposta do recurso autorizado')], 'CPF inválido/ausente/inativo: sem token. Ausência de Bearer pode ser recusada no Gateway com 401.')
+(0,1,'POST /v1/auth/customer: CPF'),(1,2,'Integração pública'),(2,3,'Consultar cliente e active'),(3,2,'Existência e status'),(2,1,'Cliente ativo: 200 + JWT CUSTOMER'),(1,0,'Devolver token ao cliente'),(0,1,'GET /v1/me/work-orders + Bearer'),(1,4,'Validar assinatura / issuer / expiração'),(4,1,'Permitir ou negar'),(1,5,'Encaminhar; API aplica RBAC e propriedade'),(5,1,'Resposta do recurso autorizado'),(1,0,'Devolver resposta ao cliente')], 'CPF inválido/ausente/inativo: sem token. Ausência de Bearer pode ser recusada no Gateway com 401.')
 sequence('abertura-os','Abertura de OS: JWT de funcionário ADMIN / MECHANIC',['Funcionário','API Gateway','JWT\nAuthorizer','API /\nWorkOrderService','RDS\nPostgreSQL','Adaptador\nSMTP'],[
-(0,1,'POST /v1/work-orders + Bearer'),(1,2,'Validar JWT'),(2,1,'Permitir ou negar'),(1,3,'Encaminhar; validar RBAC e DTO'),(3,4,'Transação: consultar referências'),(4,3,'Cliente / veículo / funcionário opcional'),(3,4,'Persistir OS RECEIVED e itens opcionais'),(3,5,'Solicitar notificação de acompanhamento'),(5,3,'Entrega ou falha tratada'),(3,4,'Confirmar transação'),(3,0,'201 Created + Location')], 'Pré-condição: login do funcionário. Falha transacional exige rollback; CUSTOMER não autoriza este POST.')
+(0,1,'POST /v1/work-orders + Bearer'),(1,2,'Validar JWT'),(2,1,'Permitir ou negar'),(1,3,'Encaminhar; validar RBAC e DTO'),(3,4,'Transação: consultar referências'),(4,3,'Cliente / veículo / funcionário opcional'),(3,4,'Persistir OS RECEIVED e itens opcionais'),(3,5,'Solicitar notificação de acompanhamento'),(5,3,'Entrega ou falha tratada'),(3,4,'Confirmar transação'),(3,1,'201 Created + Location'),(1,0,'Devolver resposta ao funcionário')], 'Pré-condição: login do funcionário. Falha transacional exige rollback; CUSTOMER não autoriza este POST.')
 print('Four diagrams exported as PNG/SVG; Mermaid sources retained.')

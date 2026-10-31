@@ -1,27 +1,27 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="1140" viewBox="0 0 1500 1140"><rect width="100%" height="100%" fill="white"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="1220" viewBox="0 0 1500 1220"><rect width="100%" height="100%" fill="white"/>
 <text x="750.0" y="52" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="27" font-weight="bold" fill="#17324d">Abertura de OS: JWT de funcionário ADMIN / MECHANIC</text>
 <rect x="18.0" y="85" width="224" height="69" rx="9" fill="#e8f1f9" stroke="#829bb3"/>
 <text x="130.0" y="115" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="bold" fill="#17324d">Funcionário</text>
-<line x1="130.0" y1="158" x2="130.0" y2="1050" stroke="#b3c2cf" stroke-width="2" stroke-dasharray="6 6"/>
+<line x1="130.0" y1="158" x2="130.0" y2="1130" stroke="#b3c2cf" stroke-width="2" stroke-dasharray="6 6"/>
 <rect x="266.0" y="85" width="224" height="69" rx="9" fill="#e8f1f9" stroke="#829bb3"/>
 <text x="378.0" y="115" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="bold" fill="#17324d">API Gateway</text>
-<line x1="378.0" y1="158" x2="378.0" y2="1050" stroke="#b3c2cf" stroke-width="2" stroke-dasharray="6 6"/>
+<line x1="378.0" y1="158" x2="378.0" y2="1130" stroke="#b3c2cf" stroke-width="2" stroke-dasharray="6 6"/>
 <rect x="514.0" y="85" width="224" height="69" rx="9" fill="#e8f1f9" stroke="#829bb3"/>
 <text x="626.0" y="115" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="bold" fill="#17324d">JWT</text>
 <text x="626.0" y="138" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="bold" fill="#17324d">Authorizer</text>
-<line x1="626.0" y1="158" x2="626.0" y2="1050" stroke="#b3c2cf" stroke-width="2" stroke-dasharray="6 6"/>
+<line x1="626.0" y1="158" x2="626.0" y2="1130" stroke="#b3c2cf" stroke-width="2" stroke-dasharray="6 6"/>
 <rect x="762.0" y="85" width="224" height="69" rx="9" fill="#e8f1f9" stroke="#829bb3"/>
 <text x="874.0" y="115" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="bold" fill="#17324d">API /</text>
 <text x="874.0" y="138" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="bold" fill="#17324d">WorkOrderService</text>
-<line x1="874.0" y1="158" x2="874.0" y2="1050" stroke="#b3c2cf" stroke-width="2" stroke-dasharray="6 6"/>
+<line x1="874.0" y1="158" x2="874.0" y2="1130" stroke="#b3c2cf" stroke-width="2" stroke-dasharray="6 6"/>
 <rect x="1010.0" y="85" width="224" height="69" rx="9" fill="#e8f1f9" stroke="#829bb3"/>
 <text x="1122.0" y="115" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="bold" fill="#17324d">RDS</text>
 <text x="1122.0" y="138" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="bold" fill="#17324d">PostgreSQL</text>
-<line x1="1122.0" y1="158" x2="1122.0" y2="1050" stroke="#b3c2cf" stroke-width="2" stroke-dasharray="6 6"/>
+<line x1="1122.0" y1="158" x2="1122.0" y2="1130" stroke="#b3c2cf" stroke-width="2" stroke-dasharray="6 6"/>
 <rect x="1258.0" y="85" width="224" height="69" rx="9" fill="#e8f1f9" stroke="#829bb3"/>
 <text x="1370.0" y="115" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="bold" fill="#17324d">Adaptador</text>
 <text x="1370.0" y="138" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="bold" fill="#17324d">SMTP</text>
-<line x1="1370.0" y1="158" x2="1370.0" y2="1050" stroke="#b3c2cf" stroke-width="2" stroke-dasharray="6 6"/>
+<line x1="1370.0" y1="158" x2="1370.0" y2="1130" stroke="#b3c2cf" stroke-width="2" stroke-dasharray="6 6"/>
 <rect x="137.9609375" y="158" width="232.078125" height="53" fill="white"/>
 <text x="254.0" y="178" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">1. POST /v1/work-orders</text>
 <text x="254.0" y="201" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">+ Bearer</text>
@@ -66,9 +66,14 @@
 <text x="998.0" y="922" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">10. Confirmar transação</text>
 <line x1="874.0" y1="935" x2="1122.0" y2="935" stroke="#245a86" stroke-width="2"/>
 <polygon points="1122.0,935 1110.0,929 1110.0,941" fill="#245a86"/>
-<rect x="370.8359375" y="982" width="262.328125" height="29" fill="white"/>
-<text x="502.0" y="1002" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">11. 201 Created + Location</text>
-<line x1="874.0" y1="1015" x2="130.0" y2="1015" stroke="#245a86" stroke-width="2"/>
-<polygon points="130.0,1015 142.0,1009 142.0,1021" fill="#245a86"/>
-<text x="750.0" y="1093" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="17" font-weight="normal" fill="#17324d">Pré-condição: login do funcionário. Falha transacional exige rollback; CUSTOMER não autoriza este POST.</text>
+<rect x="494.8359375" y="982" width="262.328125" height="29" fill="white"/>
+<text x="626.0" y="1002" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">11. 201 Created + Location</text>
+<line x1="874.0" y1="1015" x2="378.0" y2="1015" stroke="#245a86" stroke-width="2"/>
+<polygon points="378.0,1015 390.0,1009 390.0,1021" fill="#245a86"/>
+<rect x="134.0234375" y="1038" width="239.953125" height="53" fill="white"/>
+<text x="254.0" y="1058" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">12. Devolver resposta ao</text>
+<text x="254.0" y="1081" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="18" font-weight="normal" fill="#17324d">funcionário</text>
+<line x1="378.0" y1="1095" x2="130.0" y2="1095" stroke="#245a86" stroke-width="2"/>
+<polygon points="130.0,1095 142.0,1089 142.0,1101" fill="#245a86"/>
+<text x="750.0" y="1173" text-anchor="middle" font-family="DejaVu Sans,sans-serif" font-size="17" font-weight="normal" fill="#17324d">Pré-condição: login do funcionário. Falha transacional exige rollback; CUSTOMER não autoriza este POST.</text>
 </svg>

@@ -20,5 +20,6 @@ sequenceDiagram
   API->>SMTP: Preparar notificação de acompanhamento
   SMTP-->>API: Entrega ou falha tratada pelo adaptador
   API->>DB: Commit
-  API-->>F: 201 Created + Location
+  API-->>G: 201 Created + Location
+  G-->>F: Devolver resposta
   Note over API,DB: Falha transacional exige rollback; não se promete outbox
