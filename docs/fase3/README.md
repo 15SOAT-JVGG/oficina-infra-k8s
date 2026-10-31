@@ -1,6 +1,6 @@
 # Fase 3 - documentação da Oficina
 
-Pacote arquitetural e roteiro de homologação. Revisão: 30/10/2026 (BRT).
+Pacote arquitetural e roteiro de homologação. Revisão: 31/10/2026 (BRT).
 O estado descrito é o ambiente acadêmico implantado. A matriz de validação diferencia
 implementação, evidência observada e pendências; documentação não substitui um teste operacional.
 

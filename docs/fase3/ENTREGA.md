@@ -5,10 +5,10 @@ vídeo depois de concluir os requisitos técnicos. Não há link de vídeo atual
 
 ## Repositórios
 
-1. [Abrir](https://github.com/15SOAT-JVGG/oficina-lambda-auth)
-2. [Abrir](https://github.com/15SOAT-JVGG/oficina-infra-k8s)
-3. [Abrir](https://github.com/15SOAT-JVGG/oficina-infra-db)
-4. [Abrir](https://github.com/15SOAT-JVGG/oficina-app)
+1. [oficina-lambda-auth](https://github.com/15SOAT-JVGG/oficina-lambda-auth)
+2. [oficina-infra-k8s](https://github.com/15SOAT-JVGG/oficina-infra-k8s)
+3. [oficina-infra-db](https://github.com/15SOAT-JVGG/oficina-infra-db)
+4. [oficina-app](https://github.com/15SOAT-JVGG/oficina-app)
 
 ## Documentação
 
