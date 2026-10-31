@@ -1,0 +1,44 @@
+name: Encerrar infraestrutura FIAP do Learner Lab
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        type: choice
+        options: [plan, destroy]
+        default: plan
+        description: Plano sem alterações ou remoção após validação da entrega
+      confirmation:
+        type: string
+        description: Para remover, informe DESTROY-FIAP-630266487412
+        default: ''
+permissions:
+  contents: read
+concurrency:
+  group: terraform-apply
+  cancel-in-progress: false
+jobs:
+  teardown:
+    if: github.ref_name == 'main'
+    runs-on: ubuntu-latest
+    environment: homolog
+    timeout-minutes: 90
+    env:
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: ${{ secrets.HOMOLOG_AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.HOMOLOG_AWS_SECRET_ACCESS_KEY }}
+      AWS_SESSION_TOKEN: ${{ secrets.HOMOLOG_AWS_SESSION_TOKEN }}
+      TEARDOWN_OPERATION: ${{ inputs.operation }}
+      TEARDOWN_CONFIRMATION: ${{ inputs.confirmation }}
+      KUBECONFIG: /tmp/fiap-teardown-kubeconfig
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.10.5
+          terraform_wrapper: false
+      - uses: azure/setup-kubectl@c0c8b32d33a5244f1e5947304550403b63930415
+        with:
+          version: v1.34.0
+      - run: python3 scripts/lab-teardown.py
+      - if: always()
+        run: rm -f "$KUBECONFIG"
