@@ -65,7 +65,7 @@ variable "lab_role_name" {
 }
 
 variable "app_upstream_urls" {
-  description = "Endereço do Service da aplicação por ambiente (http://<hostname-do-ELB>), lido do contrato S3 de upstream."
+  description = "URL pública legada do upstream por ambiente, mantida até o contrato publicar listener NLB interno."
   type        = map(string)
   default     = {}
 
@@ -74,7 +74,35 @@ variable "app_upstream_urls" {
       for environment, url in var.app_upstream_urls :
       !contains(["homolog", "production"], environment) || url == "" || try(can(regex("^https?://[^/]+$", url)), false)
     ])
-    error_message = "Cada upstream deve ser uma URL HTTP(S) sem caminho, para um ambiente homolog ou production."
+    error_message = "Cada upstream legado deve ser uma URL HTTP(S) sem caminho de homolog ou production."
+  }
+}
+
+variable "app_upstream_listener_arns" {
+  description = "ARN do listener NLB interno da aplicação por ambiente, quando o contrato já foi migrado."
+  type        = map(string)
+  default     = {}
+
+  validation {
+    condition = alltrue([
+      for environment, arn in var.app_upstream_listener_arns :
+      !contains(["homolog", "production"], environment) || arn == "" || can(regex("^arn:[^:]+:elasticloadbalancing:[^:]+:[0-9]{12}:listener/net/.+$", arn))
+    ])
+    error_message = "Cada listener de upstream deve ser um ARN NLB válido de homolog ou production."
+  }
+}
+
+variable "grafana_listener_arns" {
+  description = "ARN do listener NLB interno do Grafana para os ambientes autorizados, vindo do contrato S3 de observabilidade."
+  type        = map(string)
+  default     = {}
+
+  validation {
+    condition = alltrue([
+      for environment, arn in var.grafana_listener_arns :
+      !contains(["homolog", "production"], environment) || arn == "" || can(regex("^arn:[^:]+:elasticloadbalancing:[^:]+:[0-9]{12}:listener/net/.+$", arn))
+    ])
+    error_message = "O Grafana deve usar ARN de listener NLB válido em homolog ou production."
   }
 }
 
@@ -98,7 +126,7 @@ variable "authorizer_arns" {
 variable "public_api_docs_environments" {
   description = "Ambientes em que OpenAPI e Swagger UI ficam públicos para demonstrações."
   type        = set(string)
-  default     = []
+  default     = ["homolog"]
 
   validation {
     condition = alltrue([

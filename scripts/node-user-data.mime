@@ -1,0 +1,31 @@
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="BOUNDARY"
+
+--BOUNDARY
+Content-Type: application/node.eks.aws
+
+---
+apiVersion: node.eks.aws/v1alpha1
+kind: NodeConfig
+spec:
+  featureGates:
+    InstanceIdNodeName: true
+
+--BOUNDARY
+Content-Type: text/x-shellscript
+
+#!/bin/bash
+set -euo pipefail
+
+# LabRole cannot call DescribeInstances. Read the same private DNS name from
+# instance metadata and keep the existing EC2_LINUX access-entry identity.
+token=$(curl -fsS -X PUT -H 'X-aws-ec2-metadata-token-ttl-seconds: 60' http://169.254.169.254/latest/api/token)
+dns=$(curl -fsS -H "X-aws-ec2-metadata-token: $token" http://169.254.169.254/latest/meta-data/local-hostname)
+case "$dns" in
+  ip-*.ec2.internal|ip-*.compute.internal) ;;
+  *) echo "Unexpected EC2 private hostname" >&2; exit 1 ;;
+esac
+mkdir -p /etc/eks/nodeadm.d
+printf '%s\n' 'apiVersion: node.eks.aws/v1alpha1' 'kind: NodeConfig' 'spec:' '  kubelet:' '    flags:' "      - --hostname-override=$dns" > /etc/eks/nodeadm.d/99-lab-hostname.yaml
+
+--BOUNDARY--

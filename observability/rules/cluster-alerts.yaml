@@ -1,0 +1,192 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: oficina-cluster-alerts
+  namespace: observability
+  labels:
+    release: oficina-monitoring
+spec:
+  groups:
+    - name: oficina.api.traffic
+      rules:
+        - alert: ApiHighServerErrorRate
+          expr: |
+            (
+              sum by (namespace) (
+                rate(http_server_requests_seconds_count{
+                  job="oficina-mecanica-management", status=~"5.."
+                }[5m])
+              )
+              /
+              clamp_min(
+                sum by (namespace) (
+                  rate(http_server_requests_seconds_count{
+                    job="oficina-mecanica-management"
+                  }[5m])
+                ),
+                1e-9
+              )
+            ) > 0.05
+              and on (namespace)
+            sum by (namespace) (
+              rate(http_server_requests_seconds_count{
+                job="oficina-mecanica-management"
+              }[5m])
+            ) > 0.2
+          for: 5m
+          labels:
+            severity: warning
+            service: oficina-api
+          annotations:
+            summary: Taxa elevada de respostas HTTP 5xx
+            description: >-
+              A API em {{ $labels.namespace }} excedeu 5% de respostas 5xx por pelo menos
+              5 minutos, com tráfego acima de 0,2 requisições por segundo.
+
+        - alert: ApiHighP95Latency
+          expr: |
+            histogram_quantile(
+              0.95,
+              sum by (namespace, le) (
+                rate(http_server_requests_seconds_bucket{
+                  job="oficina-mecanica-management"
+                }[5m])
+              )
+            ) > 1
+              and on (namespace)
+            sum by (namespace) (
+              rate(http_server_requests_seconds_count{
+                job="oficina-mecanica-management"
+              }[5m])
+            ) > 0.2
+          for: 5m
+          labels:
+            severity: warning
+            service: oficina-api
+          annotations:
+            summary: Latência p95 da API acima de 1 segundo
+            description: >-
+              A latência p95 em {{ $labels.namespace }} excedeu 1 segundo por pelo menos
+              5 minutos, com tráfego acima de 0,2 requisições por segundo.
+
+        - alert: ApiManagementTargetMissingHomolog
+          expr: absent(up{job="oficina-mecanica-management", namespace="homolog"})
+          for: 3m
+          labels:
+            severity: critical
+            service: oficina-api
+            environment: homolog
+          annotations:
+            summary: Target Prometheus da API ausente em homolog
+            description: >-
+              O target de métricas da API de homolog não aparece no Prometheus há 3 minutos.
+
+        - alert: ApiManagementTargetMissingProduction
+          expr: absent(up{job="oficina-mecanica-management", namespace="production"})
+          for: 3m
+          labels:
+            severity: critical
+            service: oficina-api
+            environment: production
+          annotations:
+            summary: Target Prometheus da API ausente em produção
+            description: >-
+              O target de métricas da API de produção não aparece no Prometheus há 3 minutos.
+
+    - name: oficina.cluster.availability
+      rules:
+        - alert: DeploymentReplicasUnavailable
+          expr: |
+            kube_deployment_spec_replicas{namespace=~"homolog|production"} > 0
+              and
+            kube_deployment_status_replicas_available{namespace=~"homolog|production"}
+              < kube_deployment_spec_replicas{namespace=~"homolog|production"}
+          for: 5m
+          labels:
+            severity: warning
+            service: kubernetes
+          annotations:
+            summary: Deployment com réplicas indisponíveis
+            description: >-
+              O deployment {{ $labels.namespace }}/{{ $labels.deployment }} está com menos
+              réplicas disponíveis que o desejado por pelo menos 5 minutos.
+
+        - alert: ContainerOOMKilled
+          expr: |
+            max by (namespace, pod, container) (
+              kube_pod_container_status_last_terminated_reason{
+                namespace=~"homolog|production", reason="OOMKilled"
+              }
+            ) == 1
+              and
+            increase(kube_pod_container_status_restarts_total{
+              namespace=~"homolog|production"
+            }[15m]) > 0
+          for: 1m
+          labels:
+            severity: warning
+            service: kubernetes
+          annotations:
+            summary: Container encerrado por falta de memória
+            description: >-
+              O container {{ $labels.namespace }}/{{ $labels.pod }}/{{ $labels.container }}
+              registrou OOMKilled. Verifique memória working set e limites.
+
+        - alert: PodFrequentlyRestarting
+          expr: |
+            increase(kube_pod_container_status_restarts_total{
+              namespace=~"homolog|production"
+            }[10m]) >= 3
+          for: 2m
+          labels:
+            severity: warning
+            service: kubernetes
+          annotations:
+            summary: Container reiniciando repetidamente
+            description: >-
+              O container {{ $labels.namespace }}/{{ $labels.pod }}/{{ $labels.container }}
+              reiniciou pelo menos três vezes nos últimos 10 minutos.
+
+        - alert: PrometheusTargetDown
+          expr: up{namespace=~"homolog|production"} == 0
+          for: 3m
+          labels:
+            severity: warning
+            service: observability
+          annotations:
+            summary: Target Prometheus indisponível
+            description: >-
+              O target {{ $labels.job }} em {{ $labels.namespace }} está sem scrape válido.
+
+        - alert: PublicApiProbeFailed
+          expr: probe_success{job=~"oficina-public-api-.*"} == 0
+          for: 2m
+          labels:
+            severity: critical
+            service: public-api
+          annotations:
+            summary: Sondagem pública da API falhou
+            description: >-
+              A URL monitorada em {{ $labels.environment }} falha há 2 minutos. Verifique
+              API Gateway, rota pública, readiness e dependências.
+
+    - name: oficina.cluster.capacity
+      rules:
+        - alert: HpaAtMaximumReplicas
+          expr: |
+            kube_horizontalpodautoscaler_status_current_replicas{
+              namespace=~"homolog|production"
+            }
+              >=
+            kube_horizontalpodautoscaler_spec_max_replicas{
+              namespace=~"homolog|production"
+            }
+          for: 10m
+          labels:
+            severity: warning
+            service: kubernetes
+          annotations:
+            summary: HPA no limite configurado
+            description: >-
+              O HPA {{ $labels.namespace }}/{{ $labels.horizontalpodautoscaler }} está no
+              máximo de réplicas há 10 minutos. Revise carga e capacidade do node group.
