@@ -1,0 +1,39 @@
+name: Diagnose homolog API 503 read-only
+on:
+  push:
+    branches: [codex/diag-api503]
+  workflow_dispatch:
+permissions: {}
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    environment: homolog
+    timeout-minutes: 5
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.HOMOLOG_AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.HOMOLOG_AWS_SECRET_ACCESS_KEY }}
+      AWS_SESSION_TOKEN: ${{ secrets.HOMOLOG_AWS_SESSION_TOKEN }}
+    steps:
+      - name: Classify Gateway errors without IPs, payloads or identities
+        run: |
+          set -euo pipefail
+          umask 077
+          log_file="$RUNNER_TEMP/gateway-errors.json"
+          trap 'rm -f "$log_file"' EXIT
+          aws logs filter-log-events --log-group-name /aws/apigateway/oficina-homolog \
+            --start-time "$(( ($(date +%s) - 1800) * 1000 ))" \
+            --filter-pattern '{ $.status = "503" }' --limit 100 --output json > "$log_file"
+          python3 - "$log_file" <<'PYTHON'
+          import collections, json, re, sys
+          summary=collections.Counter()
+          for event in json.load(open(sys.argv[1])).get('events',[]):
+              record=json.loads(event['message'])
+              error=str(record.get('integrationError','-'))
+              error=re.sub(r'https?://\S+', '[endpoint]', error)
+              error=re.sub(r'arn:[\w:/.-]+', '[resource]', error)
+              error=re.sub(r'\S+@\S+', '[identity]', error)
+              summary[(str(record.get('integrationStatus','-')), error[:300], str(record.get('integrationLatency','-')))] += 1
+          for (status,error,latency),count in summary.items():
+              print(json.dumps({'integration_status':status,'integration_error':error,'integration_latency_ms':latency,'count':count}))
+          PYTHON
