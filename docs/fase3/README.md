@@ -47,3 +47,11 @@ O PDF é um dossiê pré-entrega: o vídeo e as lacunas técnicas continuam pend
 
 Para reproduzir a partir da raiz do repositório, usar Python com Pillow/ReportLab e Graphviz:
 `python3 docs/fase3/gerar-diagramas.py` e `python3 docs/fase3/gerar-dossie.py`.
+
+## Arquivos separados
+
+Os PDFs individuais ficam em `output/pdf/separados/`, gerados por
+`python3 docs/fase3/gerar-separados.py`. Incluem arquitetura, sequências, modelo de dados,
+cada RFC/ADR, matriz, roteiro simples e folha de entrega. Diagramas PNG/SVG e fontes Mermaid
+continuam em `docs/fase3/diagramas/`. O pacote ZIP reúne os PDFs e as fontes editáveis.
+O enunciado continua exigindo vídeo e PDF único de links para o Portal.

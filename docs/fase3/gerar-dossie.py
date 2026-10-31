@@ -1,6 +1,6 @@
 """Build the review dossier from Markdown and exported diagrams (ReportLab/Pillow)."""
 from pathlib import Path
-import re, html, posixpath
+import re, html, posixpath, os
 from reportlab.platypus import BaseDocTemplate, PageTemplate, Frame, Paragraph, Spacer, PageBreak, NextPageTemplate, LongTable, TableStyle, Image
 from reportlab.lib.pagesizes import A4, A3, landscape
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -11,7 +11,8 @@ from PIL import Image as PILImage
 
 root=Path(__file__).resolve().parents[2]
 source=root/'docs/fase3'
-output=root/'output/pdf/fiap-fase3-dossie-tecnico.pdf'
+individual=os.environ.get('FIAP_DOCUMENT')
+output=root/'output/pdf'/('separados/'+individual.replace('/', '-').replace('.md','.pdf') if individual else 'fiap-fase3-dossie-tecnico.pdf')
 output.parent.mkdir(parents=True,exist_ok=True)
 fonts=Path('/usr/share/fonts/truetype/dejavu')
 for name,file in [('Body','DejaVuSans.ttf'),('Body-Bold','DejaVuSans-Bold.ttf'),('Body-Oblique','DejaVuSans-Oblique.ttf'),('Body-BoldOblique','DejaVuSans-BoldOblique.ttf'),('Mono','DejaVuSansMono.ttf')]:
@@ -50,8 +51,12 @@ pw,ph=A4;lw,lh=landscape(A3)
 doc.addPageTemplates([
  PageTemplate(id='Portrait',frames=[Frame(44,42,pw-88,ph-94,id='portrait',leftPadding=0,rightPadding=0,topPadding=0,bottomPadding=0)],onPage=furniture,pagesize=A4),
  PageTemplate(id='Landscape',frames=[Frame(35,42,lw-70,lh-94,id='landscape',leftPadding=0,rightPadding=0,topPadding=0,bottomPadding=0)],onPage=furniture,pagesize=landscape(A3))])
-story=[Spacer(1,68),Paragraph('Oficina<br/>Dossiê técnico da Fase 3',styles['TitleCustom']),Spacer(1,20),Paragraph('Arquitetura, componentes, sequências, modelo relacional, RFCs, ADRs e validação do ambiente de homologação.',styles['Text']),Spacer(1,20),Paragraph('<b>Revisão de 30/10/2026 (BRT)</b>',styles['Text']),Paragraph('Este documento registra a solução observada e suas pendências. Não declara conformidade integral e não substitui o PDF final de submissão enquanto faltar o vídeo e a conclusão dos requisitos técnicos.',styles['Text']),Spacer(1,25),Paragraph('O vídeo será gravado pelo usuário após finalizar as pendências. Nenhum CPF, token, senha ou dado de cliente consta deste dossiê.',styles['Text']),PageBreak()]
+story=[Spacer(1,68),Paragraph('Oficina<br/>Dossiê técnico da Fase 3',styles['TitleCustom']),Spacer(1,20),Paragraph('Arquitetura, componentes, sequências, modelo relacional, RFCs, ADRs e validação do ambiente de homologação.',styles['Text']),Spacer(1,20),Paragraph('<b>Revisão de 31/10/2026 (BRT)</b>',styles['Text']),Paragraph('Este documento registra a solução observada e suas pendências. Não declara conformidade integral e não substitui o PDF final de submissão enquanto faltar o vídeo e a conclusão dos requisitos técnicos.',styles['Text']),Spacer(1,25),Paragraph('O vídeo será gravado pelo usuário após finalizar as pendências. Nenhum CPF, token, senha ou dado de cliente consta deste dossiê.',styles['Text']),PageBreak()]
 order=['README.md','ARQUITETURA.md','SEQUENCIAS.md','MODELO-DE-DADOS.md','rfc/001-cloud-gerenciada.md','rfc/002-postgresql.md','rfc/003-autenticacao.md','adr/001-comunicacao-e-fronteiras.md','adr/002-hpa.md','adr/003-observabilidade-no-lab.md','VALIDACAO.md','ROTEIRO-VIDEO.md','ENTREGA.md']
+if individual:
+    if individual not in order or individual == 'README.md': raise ValueError('Documento desconhecido')
+    order=[individual]
+    story=[]
 for file_index,name in enumerate(order):
     path=source/name;lines=path.read_text().splitlines();i=0;figures=[]
     while i<len(lines):

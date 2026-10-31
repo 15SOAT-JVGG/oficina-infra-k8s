@@ -79,3 +79,16 @@ A política do Lab impediu o uso de EBS CSI com a identidade necessária. emptyD
 homologação, mas histórico de telemetria é volátil. O enunciado não determina EBS, Multi-AZ
 ou um fornecedor específico de monitoramento: essas limitações não são transformadas aqui
 em exigências inventadas, mas devem ficar claras na apresentação.
+
+## Atualização operacional - 31/10/2026 (BRT)
+
+- Deploy homolog concluído: https://github.com/15SOAT-JVGG/oficina-app/actions/runs/41158248740
+- Seed espaçado aprovado: seis OS, uma por estado; HTTP 200/201, sem 503 nesta execução:
+  https://github.com/15SOAT-JVGG/oficina-app/actions/runs/41158958643
+- Carga separada: 211 tentativas, oito 503; teste reprovado corretamente:
+  https://github.com/15SOAT-JVGG/oficina-app/actions/runs/41158493007
+- Réplicas Ready passaram de duas para quatro durante a carga e retornaram a duas
+  nas amostras do seed posterior. Isso comprova reação do HPA, sem comprovar estabilidade.
+- NLB cross-zone habilitado, mas 503 persistiu. Há também falhas SMTP por limite de envio;
+  elas não explicam os 503 da carga de login, que não envia e-mail. Causa ainda aberta.
+- Indicadores de negócio, histogramas HTTP, traces e alertas específicos continuam pendentes.

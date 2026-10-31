@@ -1,30 +1,64 @@
-# Roteiro de demonstração - máximo 15 minutos
+# Roteiro simples - demonstração da Fase 3
 
-O usuário gravará o vídeo após fechar as pendências técnicas da matriz. Este roteiro não
-representa vídeo já produzido. Meta de duração: 14min30s, com margem de 30s.
+Meta: 12 a 14 minutos. Limite do enunciado: 15 minutos. Gravar a versão final após fechar
+as pendências da matriz; não apresentar painel vazio como indicador atendido.
 
-| Tempo | Demonstração | Evidência visível |
-|---|---|---|
-| 00:00-00:45 | Apresentar o problema, quatro repositórios e diagrama de componentes | Links e componentes reais |
-| 00:45-02:15 | Mostrar PR/main protegida e execução de pipeline | Commit, checks e deploy concluído; não apenas disparo |
-| 02:15-04:00 | Autenticar cliente sintético por CPF | Resposta 200 sem CPF/token no enquadramento; identificar grupo CUSTOMER |
-| 04:00-05:00 | Consumir rota protegida e mostrar negativas | 200 de cliente; 401 sem token; 403 token inválido/RBAC |
-| 05:00-07:00 | Funcionário abre e avança uma OS controlada | 201, sequência de estados e persistência; sem dados reais |
-| 07:00-08:30 | Demonstrar escalabilidade e saúde | HPA, réplicas e readiness sob carga limitada |
-| 08:30-10:30 | Grafana: visão geral e infraestrutura | Tráfego/latência/erros, uptime, CPU/memória |
-| 10:30-12:00 | Indicadores de negócio exigidos | Volume por dia, médias por etapa e falhas de integrações; pendente implementação/evidência |
-| 12:00-13:15 | Investigar log e trace do mesmo fluxo | JSON, correlação e trace exportado de fato |
-| 13:15-14:00 | Mostrar alerta de falha de OS e recuperação | firing e resolved; destino quando configurado |
-| 14:00-14:30 | Encerrar com ER, decisões e links de entrega | Documentação e avaliador nos quatro repositórios |
+## Preparação
 
-## Antes de gravar
+- Abrir o diagrama de componentes, os quatro repositórios e uma execução de deploy concluída.
+- Abrir Swagger, cliente HTTP e os dois dashboards do Grafana.
+- Usar apenas dados sintéticos. Ocultar CPF, senha e JWT no enquadramento.
+- Fazer o seed antes da gravação: seed_only, 6 OS. A carga é separada: load_only,
+  180 segundos, concorrência 2. Esses valores menores ainda precisam de validação de carga.
+- Não executar carga junto com rollout. Não repetir seed para gerar pressão: cada lote permanece.
 
-- Confirmar sessão AWS ainda válida e endpoints ativos; não mostrar a tela de credenciais.
-- Fechar todos os itens de negócio/alertas/traces na matriz; não apresentar painel vazio como zero.
-- Preparar dados exclusivamente sintéticos e requests que não exibam senha/JWT/CPF.
-- Preservar logs/traces necessários durante a gravação: emptyDir perde histórico em recriação.
-- Mostrar uma execução automatizada concluída dos quatro repositórios; o DB não foi reaplicado
-  nesta revisão e sua sessão atual precisa ser conferida sem ampliar o escopo de secrets definido pelo usuário.
-- Conferir as alterações na documentação e os links ativos nos quatro READMEs.
-- Fazer upload público/não listado no YouTube/Vimeo, conferir duração <=15min e acesso sem login.
-- Preencher o link real em ENTREGA.md e gerar o PDF único de submissão somente depois disso.
+## 1. Apresentação e arquitetura - 1 minuto
+
+Fala sugerida: “Esta é a aplicação da oficina. Organizamos a solução em quatro repositórios:
+aplicação, autenticação serverless, infraestrutura Kubernetes e banco gerenciado.”
+Mostrar o diagrama e apontar Gateway, Lambda, EKS, PostgreSQL e observabilidade.
+
+## 2. Pipeline e deploy - 2 minutos
+
+Mostrar um PR, proteção da main, checks e uma execução concluída em homologação.
+Apontar teste, publicação da imagem, rollout e smoke pelo Gateway. Mostrar também os
+workflows dos outros três repositórios. Dizer que produção tem triggers configurados,
+mas sua execução ainda não está comprovada nesta homologação.
+
+## 3. Autenticação e API protegida - 2 minutos
+
+Fazer login com CPF sintético ativo sem revelar seu valor nem o JWT. Mostrar apenas HTTP 200.
+Consumir uma rota CUSTOMER com sucesso. Repetir sem token (401) e tentar uma rota
+operacional como CUSTOMER (403). Explicar que a Lambda verifica cadastro/status e emite JWT.
+
+## 4. Ordem de serviço - 2 minutos
+
+Como funcionário, abrir uma OS e mostrar sua consulta. Usar o lote preparado para mostrar
+Recebida, Diagnóstico, Aguardando aprovação, Em execução, Concluída e Entregue.
+Explicar o orçamento e a reserva de estoque, sem expor dados pessoais.
+
+## 5. Monitoramento e escala - 3 minutos
+
+No Grafana, abrir Visão geral e Infraestrutura. Mostrar uptime, CPU, memória e réplicas.
+Iniciar uma carga leve separada do seed, observar o HPA e sua recuperação. Não prometer
+atingir seis pods. Se ocorrer 503, interromper e registrar a falha; não esconder o resultado.
+Mostrar latência/erros, volume diário de OS, tempo médio por etapa e falhas de integrações
+somente após implementar e validar esses indicadores, ainda pendentes na revisão atual.
+
+## 6. Logs, traces e alertas - 2 minutos
+
+Selecionar uma requisição de teste, mostrar log JSON e o trace correspondente no Tempo.
+Demonstrar alerta de falha de OS disparando e resolvendo. Esses exemplos precisam estar
+validados antes da gravação final: logs com traceId, sozinhos, não comprovam trace exportado.
+
+## 7. Documentação e encerramento - 1 minuto
+
+Mostrar componentes, as duas sequências, ER, RFCs e ADRs nos arquivos separados.
+Encerrar com links dos quatro repositórios e confirmação de acesso do avaliador.
+
+## Depois da gravação
+
+Publicar no YouTube/Vimeo como público ou não listado, conferir acesso e duração de até
+15 minutos e incluir o link na folha de entrega. O Portal pede um PDF único com links dos
+repositórios, vídeo, documentação e confirmação do avaliador. Os arquivos separados são
+material complementar; não substituem o vídeo nem o PDF único.
