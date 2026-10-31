@@ -1,7 +1,7 @@
 {
   "revisao": "31/10/2026",
-  "video_url": null,
-  "video_duracao_segundos": null,
+  "video_url": "https://youtu.be/hgZPRw7hWeA",
+  "video_duracao_segundos": 809,
   "pendencias_tecnicas": true,
   "avaliador_verificado_em": "31/10/2026",
   "repositorios": [
@@ -162,5 +162,7 @@
       "https://github.com/15SOAT-JVGG/oficina-infra-k8s/tree/main/docs/fase3/postman"
     ]
   ],
-  "matriz_url": "https://github.com/15SOAT-JVGG/oficina-infra-k8s/blob/main/docs/fase3/VALIDACAO.md"
+  "matriz_url": "https://github.com/15SOAT-JVGG/oficina-infra-k8s/blob/main/docs/fase3/VALIDACAO.md",
+  "video_acesso_verificado_em": "31/10/2026",
+  "video_acesso": "Acessível sem login na consulta de metadados do YouTube"
 }

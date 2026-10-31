@@ -1,18 +1,17 @@
-# Entrega no Portal - preencher o vídeo antes do envio
+# Entrega no Portal - vídeo incluído
 
 [PDF único de entrega ao Portal (versão preliminar)](../../output/pdf/fiap-fase3-entrega-portal.pdf).
 
-A fonte editável é [entrega-portal.json](entrega-portal.json); para gerar novamente:
-`python3 docs/fase3/gerar-entrega-portal.py`. O PDF continua preliminar enquanto faltar
-vídeo, confirmação do avaliador ou conclusão técnica. Vídeo deve ser YouTube/Vimeo
-público ou não listado, com duração máxima de 900 segundos (15 minutos).
+Fonte editável: [entrega-portal.json](entrega-portal.json). Para gerar novamente:
+`python3 docs/fase3/gerar-entrega-portal.py`. O arquivo do Portal reúne os links;
+o dossiê técnico e os PDFs separados são materiais de consulta.
 
-O dossiê técnico é material de consulta; o arquivo acima é o documento curto de links
-para a instituição. O enunciado não exige incorporar todos os diagramas no PDF do Portal,
-pois pede links das documentações. Os diagramas e textos completos permanecem nos repositórios.
+**Estado: vídeo incluído; revisão técnica ainda pendente.**
 
-**Estado: preparação. Ainda não é uma submissão final.** O usuário confirmou que gravará o
-vídeo depois de concluir os requisitos técnicos. Não há link de vídeo atual da Fase 3.
+Vídeo: [FIAP - 16SOAT - Demonstração Fase 3](https://youtu.be/hgZPRw7hWeA).
+Duração conferida nos metadados do YouTube: **13min29s (809 segundos)**. A consulta sem
+login retornou HTTP 200 e playabilityStatus=OK em 31/10/2026. Isso confirma acesso e duração,
+sem substituir revisão do conteúdo nem comprovar os requisitos técnicos pendentes.
 
 ## Repositórios
 
@@ -47,10 +46,10 @@ Reconfirmar esse acesso antes de enviar o PDF no Portal do Aluno.
 
 ## Pendências finais
 
-- Vídeo atual (YouTube/Vimeo, público ou não listado, até 15 minutos): **pendente de gravação pelo usuário**.
+- Vídeo atual: **incluído**, 13min29s; conferir novamente o acesso antes do envio.
 - Fechar pendências técnicas registradas na matriz de validação.
 - Completar links dos READMEs e promover/documentar a revisão nos quatro repositórios.
-- Incluir URL e duração do vídeo na fonte editável e gerar a revisão final do PDF único.
+- Conferir a revisão técnica e gerar a versão de envio após fechar as pendências da matriz.
 
 O dossiê arquitetural desta revisão pode apoiar a apresentação, mas não substitui o PDF
-final enquanto o vídeo e as pendências de conformidade estiverem em aberto.
+final enquanto as pendências de conformidade estiverem em aberto. O vídeo já está incluído.

@@ -1,7 +1,10 @@
 # Roteiro simples - demonstração da Fase 3
 
-Meta: 12 a 14 minutos. Limite do enunciado: 15 minutos. Gravar a versão final após fechar
-as pendências da matriz; não apresentar painel vazio como indicador atendido.
+[Vídeo gravado](https://youtu.be/hgZPRw7hWeA): 13min29s. Este roteiro permanece como guia
+de apresentação e consulta; o conteúdo do vídeo ainda não foi revisado nesta atualização.
+
+Meta de referência: 12 a 14 minutos. Limite do enunciado: 15 minutos. Consultar a matriz antes
+da submissão; não apresentar painel vazio como indicador atendido.
 
 ## Preparação
 
