@@ -1,0 +1,24 @@
+sequenceDiagram
+  actor F as Funcionário ADMIN/MECHANIC
+  participant G as API Gateway
+  participant J as JWT Authorizer
+  participant API as API / WorkOrderService
+  participant DB as RDS PostgreSQL
+  participant SMTP as Adaptador SMTP
+  Note over F,API: Pré-condição: JWT de funcionário via POST /v1/auth/login
+  F->>G: POST /v1/work-orders + Bearer
+  G->>J: Validar JWT
+  J-->>G: Permitir / negar
+  G->>API: Requisição autorizada no Gateway
+  API->>API: RBAC e DTO
+  API->>DB: Iniciar transação / consultar referências
+  DB-->>API: Cliente, veículo e funcionário opcional
+  API->>DB: Persistir OS RECEIVED
+  opt Itens/serviços iniciais
+    API->>DB: Persistir serviços, orçamento e histórico pertinente
+  end
+  API->>SMTP: Preparar notificação de acompanhamento
+  SMTP-->>API: Entrega ou falha tratada pelo adaptador
+  API->>DB: Commit
+  API-->>F: 201 Created + Location
+  Note over API,DB: Falha transacional exige rollback; não se promete outbox

@@ -138,7 +138,7 @@ As URLs públicas saem dos outputs `api_gateway_urls`.
 Os mesmos do `oficina-infra-db`:
 
 - Bucket S3 do state; variables Organization `TF_STATE_BUCKET` e `AWS_REGION` (podem ser sobrescritas por variables de Environment).
-- Secrets Organization `HOMOLOG_AWS_ACCESS_KEY_ID`, `HOMOLOG_AWS_SECRET_ACCESS_KEY` e `HOMOLOG_AWS_SESSION_TOKEN`, com acesso selecionado aos quatro repositórios (Learner Lab, expiram em ~4h). Production mantém `AWS_*` no Environment.
+- Secrets Organization `HOMOLOG_AWS_ACCESS_KEY_ID`, `HOMOLOG_AWS_SECRET_ACCESS_KEY` e `HOMOLOG_AWS_SESSION_TOKEN`, com acesso selecionado somente a oficina-app, oficina-lambda-auth e oficina-infra-k8s, conforme o escopo desta homologação. O pipeline do banco requer conferência separada das próprias credenciais; não ampliar automaticamente o acesso das secrets da organização. Production mantém `AWS_*` no Environment.
 
 ## Execução local
 
@@ -174,6 +174,20 @@ A criação do cluster leva cerca de 15 minutos.
 
 ## Próximos passos
 
-- `oficina-app`: Dockerfile, manifests (Deployment, NLB interno, HPA) e pipeline de push no ECR e deploy.
-- `oficina-lambda-auth`: Terraform e pipeline da Lambda, registrando `POST /v1/auth/customer` e publicando o contrato do Authorizer.
-- Confirmar os limites/custos do Learner Lab para VPC Link e NLBs antes do apply; o cluster continua com endpoint de controle público e privado para administração, sem exposição pública do Service da aplicação.
+Fechar as lacunas da [matriz da Fase 3](docs/fase3/VALIDACAO.md): métricas HTTP/histogramas,
+indicadores de negócio, traces correlacionados, alertas de falha de OS, links dos READMEs e vídeo.
+Aplicação, Lambda e stack já possuem implementação e deploy em homolog; produção ainda
+precisa de evidência de execução e decisão de promoção.
+
+## Documentação da Fase 3
+
+[Índice arquitetural](docs/fase3/README.md), [componentes](docs/fase3/ARQUITETURA.md),
+[sequências](docs/fase3/SEQUENCIAS.md), [modelo relacional](docs/fase3/MODELO-DE-DADOS.md),
+[RFCs/ADRs](docs/fase3/README.md#decisões), [matriz de atendimento](docs/fase3/VALIDACAO.md)
+e [roteiro do vídeo](docs/fase3/ROTEIRO-VIDEO.md).
+
+Homologação: [Swagger](https://dcs5hfax0e.execute-api.us-east-1.amazonaws.com/q/swagger-ui/),
+[OpenAPI](https://dcs5hfax0e.execute-api.us-east-1.amazonaws.com/q/openapi?format=json)
+e [Grafana](https://dcs5hfax0e.execute-api.us-east-1.amazonaws.com/observability/).
+Os endpoints dependem da sessão/recursos do Learner Lab. O vídeo e a submissão final ainda
+estão pendentes; a matriz registra o que foi efetivamente validado.

@@ -1,0 +1,35 @@
+digraph G {
+graph [bgcolor="white",pad="0.25",nodesep="0.35",ranksep="0.5"]; node [fontname="DejaVu Sans",fontsize=15,shape=box,style="rounded,filled",fillcolor="#eef5fb",color="#829bb3",margin="0.18"]; edge [fontname="DejaVu Sans",fontsize=11,color="#4b647d",arrowsize=0.8];
+rankdir=TB;
+user[label="Cliente / funcionário",fillcolor="#e0f2ee"];
+gw[label="API Gateway HTTP\nHTTPS / entrada pública",fillcolor="#dbeaf8"];
+auth[label="Lambda customer-auth\nCPF -> cliente ativo -> JWT"];
+jwt[label="Lambda jwt-authorizer\nAssinatura / issuer / expiração"];
+link[label="VPC Link"];
+subgraph cluster_vpc { label="VPC AWS / us-east-1"; fontname="DejaVu Sans";fontsize=18;color="#a9becf";style="rounded";
+  db[label="RDS PostgreSQL 16\nprivado / TLS",shape=cylinder,fillcolor="#e0f2ee"];
+  nlb[label="NLB interno / API"];
+  ng[label="NLB interno / Grafana"];
+  subgraph cluster_eks {label="EKS oficina";color="#cedce8";style="rounded";
+    api[label="API Quarkus\n8080 + management 9000"];
+    grafana[label="Grafana\nlogin próprio",fillcolor="#ffedcf"];
+    prom[label="Prometheus"];
+    alloy[label="Alloy\nlogs + OTLP"];
+    loki[label="Loki"];
+    tempo[label="Tempo"];
+    bb[label="Blackbox\nuptime público"];
+  }
+}
+cw[label="CloudWatch\nlogs Lambda / Gateway",fillcolor="#f0f0f0"];
+user->gw[label="HTTPS"];
+gw->auth[label="POST CPF"];
+gw->jwt[label="JWT protegido"];
+gw->link;link->nlb;link->ng;nlb->api;ng->grafana;
+auth->db[label="consulta status"];
+api->db[label="persistência"];
+grafana->prom;grafana->loki;grafana->tempo;
+prom->api[label="scrape 9000",style=dashed];prom->bb[style=dashed];bb->gw[label="sondagem",style=dashed,constraint=false];
+api->alloy[label="OTLP / logs",style=dashed];alloy->loki;alloy->tempo;
+auth->cw[style=dashed];jwt->cw[style=dashed];
+{rank=same;auth;jwt;link;}
+}
