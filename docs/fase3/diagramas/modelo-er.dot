@@ -1,0 +1,28 @@
+digraph ER {
+graph [bgcolor="white",pad="0.25",nodesep="0.35",ranksep="0.5"]; node [fontname="DejaVu Sans",fontsize=15,shape=box,style="rounded,filled",fillcolor="#eef5fb",color="#829bb3",margin="0.18"]; edge [fontname="DejaVu Sans",fontsize=11,color="#4b647d",arrowsize=0.8];
+rankdir=TB;node [shape=record,fontsize=13,fillcolor="#f3f7fb"];
+customer [label="{CUSTOMER|customer_id PK\ldocument UNIQUE\lactive\l}"];
+vehicle [label="{VEHICLE|vehicle_id PK\lcustomer_id (opcional)\llicense_plate UNIQUE\l}"];
+worker [label="{WORKER|worker_id PK\lemail UNIQUE / profile\lactive\l}"];
+work_order [label="{WORK_ORDER|work_order_id PK\lcustomer_id / vehicle_id\lassigned_worker_id (opcional)\lstatus / opened_at\lclosed_at / cancelled_at\l}"];
+work_order_history [label="{WORK_ORDER_HISTORY|work_order_history_id PK\lwork_order_id\lprevious_status / new_status\lchanged_at\l}"];
+estimate [label="{ESTIMATE|estimate_id PK\lwork_order_id\lstatus / total_amount\l}"];
+estimate_item [label="{ESTIMATE_ITEM|estimate_item_id PK\lestimate_id / part_id\lquantity / unit_price\l}"];
+parts [label="{PARTS|part_id PK\lstock_quantity\lversion (@Version)\l}"];
+service_item [label="{SERVICE_ITEM|service_item_id PK\lbase_price\lactive\l}"];
+work_order_service [label="{WORK_ORDER_SERVICE|work_order_service_id PK\lwork_order_id\lservice_item_id (opcional)\lprice / description\l}"];
+estimate_decision_token [label="{ESTIMATE_DECISION_TOKEN|estimate_decision_token_id PK\lwork_order_id / estimate_id (UUID)\lexpires_at / consumed_at\l}"];
+app_users [label="{APP_USERS|id PK (numérico)\lusername UNIQUE / role\lactive / credencial (não exibida)\l}"];
+customer->vehicle [label="0..1 -> 0..N"];
+customer->work_order [label="1 -> 0..N"];
+vehicle->work_order [label="1 -> 0..N"];
+worker->work_order [label="0..1 -> 0..N"];
+work_order->work_order_history [label="1 -> 0..N"];
+work_order->estimate [label="1 -> 0..N"];
+estimate->estimate_item [label="1 -> 0..N"];
+parts->estimate_item [label="1 -> 0..N"];
+work_order->work_order_service [label="1 -> 0..N"];
+service_item->work_order_service [label="0..1 -> 0..N"];
+work_order->estimate_decision_token [style=dashed,label="UUID lógico",constraint=false];estimate->estimate_decision_token [style=dashed,label="UUID lógico"];
+{rank=same;customer;worker;app_users;}
+}

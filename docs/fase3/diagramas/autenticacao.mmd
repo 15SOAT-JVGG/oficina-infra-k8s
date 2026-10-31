@@ -1,0 +1,32 @@
+sequenceDiagram
+  actor C as Cliente
+  participant G as API Gateway
+  participant A as Lambda customer-auth
+  participant DB as RDS PostgreSQL
+  participant J as Lambda jwt-authorizer
+  participant API as API Quarkus
+  C->>G: POST /v1/auth/customer (CPF)
+  G->>A: Integração pública
+  A->>A: Validar formato/dígitos
+  A->>DB: Consultar cliente e active
+  DB-->>A: Existência e status
+  alt Cliente ativo
+    A-->>G: 200 JWT RS256 / CUSTOMER
+    G-->>C: Devolver token
+    C->>G: GET /v1/me/work-orders + Bearer
+    G->>J: Validar JWT REQUEST 2.0
+    J-->>G: Permitir ou negar
+    alt Token aceito
+      G->>API: Encaminhar quando permitido
+      API->>API: RBAC e vínculo ao cliente
+      API-->>G: 200 ou recusa de domínio
+      G-->>C: Devolver resposta
+    else Token recusado
+      G-->>C: 403 sem encaminhar à API
+    end
+  else CPF inválido, ausente ou inativo
+    A-->>G: Erro sem token
+    G-->>C: Devolver erro
+  end
+  Note over G,J: Sem identidade pode resultar em 401 sem invocar a Lambda
+  Note over G,API: Token aceito não concede permissão operacional a CUSTOMER
