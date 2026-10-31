@@ -4,6 +4,13 @@ Pacote arquitetural e roteiro de homologação. Revisão: 31/10/2026 (BRT).
 O estado descrito é o ambiente acadêmico implantado. A matriz de validação diferencia
 implementação, evidência observada e pendências; documentação não substitui um teste operacional.
 
+## PDF para enviar à instituição
+
+[Documento único de entrega ao Portal](../../output/pdf/fiap-fase3-entrega-portal.pdf):
+versão preliminar, com links dos quatro repositórios, documentação e confirmação do
+avaliador; falta incluir o vídeo e concluir as pendências técnicas.
+[Como atualizar a entrega](ENTREGA.md).
+
 ## Acesso rápido
 
 [Comece aqui: Postman, massas, seed, Grafana, PR e deploy](COMECE-AQUI.md).

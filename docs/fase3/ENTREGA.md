@@ -1,4 +1,15 @@
-# Folha de entrega - preencher após o vídeo
+# Entrega no Portal - preencher o vídeo antes do envio
+
+[PDF único de entrega ao Portal (versão preliminar)](../../output/pdf/fiap-fase3-entrega-portal.pdf).
+
+A fonte editável é [entrega-portal.json](entrega-portal.json); para gerar novamente:
+`python3 docs/fase3/gerar-entrega-portal.py`. O PDF continua preliminar enquanto faltar
+vídeo, confirmação do avaliador ou conclusão técnica. Vídeo deve ser YouTube/Vimeo
+público ou não listado, com duração máxima de 900 segundos (15 minutos).
+
+O dossiê técnico é material de consulta; o arquivo acima é o documento curto de links
+para a instituição. O enunciado não exige incorporar todos os diagramas no PDF do Portal,
+pois pede links das documentações. Os diagramas e textos completos permanecem nos repositórios.
 
 **Estado: preparação. Ainda não é uma submissão final.** O usuário confirmou que gravará o
 vídeo depois de concluir os requisitos técnicos. Não há link de vídeo atual da Fase 3.
@@ -31,14 +42,15 @@ antes da entrega. Login do Grafana usa admin e secret protegido; a senha não in
 ## Acesso do avaliador
 
 A consulta ao GitHub confirmou `soat-architecture` com acesso aos quatro repositórios em
-30/10/2026 (BRT). Reconfirmar esse acesso antes de enviar o PDF no Portal do Aluno.
+31/10/2026 (BRT), reconfirmada nesta preparação com resposta 204 nos quatro.
+Reconfirmar esse acesso antes de enviar o PDF no Portal do Aluno.
 
 ## Pendências finais
 
 - Vídeo atual (YouTube/Vimeo, público ou não listado, até 15 minutos): **pendente de gravação pelo usuário**.
 - Fechar pendências técnicas registradas na matriz de validação.
 - Completar links dos READMEs e promover/documentar a revisão nos quatro repositórios.
-- Gerar PDF único com quatro links, vídeo, documentação e confirmação do avaliador.
+- Incluir URL e duração do vídeo na fonte editável e gerar a revisão final do PDF único.
 
 O dossiê arquitetural desta revisão pode apoiar a apresentação, mas não substitui o PDF
 final enquanto o vídeo e as pendências de conformidade estiverem em aberto.
