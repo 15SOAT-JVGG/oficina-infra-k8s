@@ -113,3 +113,20 @@ jobs:
               with urllib.request.urlopen(req,timeout=30) as res: print('sampled_auth_http',res.status)
           except urllib.error.HTTPError as e: print('sampled_auth_http',e.code)
           PYTHON
+
+      - name: Inspect trace receiver configuration and export counters
+        run: |
+          set -euo pipefail
+          export KUBECONFIG="$RUNNER_TEMP/trace-counters-kubeconfig"
+          trap 'rm -f "$KUBECONFIG"; kill ${pf_pid:-} 2>/dev/null || true' EXIT
+          aws eks update-kubeconfig --name oficina --region "$AWS_REGION" >/dev/null
+          kubectl get configmap tempo -n observability -o json | jq -r '.data[]' | sed -n '/receivers:/,/ingester:/p'
+          kubectl port-forward -n observability svc/alloy 12345:12345 > "$RUNNER_TEMP/trace-pf.log" 2>&1 &
+          pf_pid=$!
+          sleep 3
+          curl -fsS --max-time 10 http://localhost:12345/metrics | awk '/^otelcol_(receiver_accepted_spans|exporter_sent_spans|exporter_send_failed_spans|receiver_refused_spans)/ {print}'
+          kill "$pf_pid"
+          kubectl port-forward -n observability svc/tempo 3200:3200 > "$RUNNER_TEMP/trace-pf.log" 2>&1 &
+          pf_pid=$!
+          sleep 3
+          curl -fsS --max-time 10 http://localhost:3200/metrics | awk '/^tempo_distributor_spans_received_total|^tempo_discarded_spans_total/ {print}'
