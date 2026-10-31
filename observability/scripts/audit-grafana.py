@@ -39,6 +39,10 @@ for name, expr in {
     'http_series': 'count(http_server_requests_seconds_count{namespace="homolog"})',
     'latency_histograms': 'count(http_server_requests_seconds_bucket{namespace="homolog"})',
     'business_series': 'count({__name__=~".*work.?order.*|.*workshop.*"})',
+    'daily_work_orders': 'max(workshop_work_orders_opened_today{namespace="homolog"})',
+    'stage_durations': 'max by(stage) (workshop_work_order_stage_duration_seconds{namespace="homolog"})',
+    'integration_counters': 'sum by(integration,outcome) (workshop_integration_calls_total{namespace="homolog"})',
+    'processing_failures': 'sum(workshop_work_order_processing_failures_total{namespace="homolog"})',
     'uptime_probes': 'sum(probe_success)',
 }.items():
     print(name, json.dumps(query(expr)))
@@ -67,3 +71,17 @@ try:
     print('log_evidence', json.dumps({'entries':len(lines),'json_entries':len(parsed),'correlated_entries':sum(bool(d.get('requestId') or d.get('mdc',{}).get('requestId')) for d in parsed),'traced_entries':sum(bool(d.get('traceId') or d.get('mdc',{}).get('traceId')) for d in parsed)}))
 except Exception as error:
     print('log_evidence unavailable',type(error).__name__)
+
+# Confirm an actual trace is retrievable and has a matching application log, without exporting identifiers.
+try:
+    search=get('/api/datasources/proxy/uid/tempo/api/search?' + urllib.parse.urlencode({'q':'{ resource.service.name = "tech-challenge-fase-1" }','limit':20,'start':int(time.time())-3600,'end':int(time.time())}))
+    traces=search.get('traces',[])
+    matched=0
+    for trace in traces:
+        trace_id=trace.get('traceID','')
+        if not trace_id: continue
+        logs=get('/api/datasources/proxy/uid/loki/loki/api/v1/query_range?' + urllib.parse.urlencode({'query':'{environment="homolog"} |= "'+trace_id+'"','limit':1,'start':str((int(time.time())-3600)*1000000000),'end':str(int(time.time())*1000000000)}))
+        if logs.get('data',{}).get('result'): matched+=1
+    print('trace_log_correlation',json.dumps({'searched_application_traces':len(traces),'traces_with_matching_logs':matched}))
+except Exception as error:
+    print('trace_log_correlation unavailable',type(error).__name__)
