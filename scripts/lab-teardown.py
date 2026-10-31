@@ -65,8 +65,9 @@ def inventory():
         print(json.dumps({'state': key, 'managed_instances': sum(len(r['instances']) for r in managed)}), flush=True)
     # Production must not be silently omitted.
     for key in ['oficina-infra-db/production/terraform.tfstate', 'oficina-lambda-auth/production/terraform.tfstate']:
-        result = subprocess.run(['aws', 's3api', 'head-object', '--bucket', BUCKET, '--key', key], capture_output=True)
+        result = subprocess.run(['aws', 's3api', 'head-object', '--bucket', BUCKET, '--key', key], capture_output=True, text=True)
         assert result.returncode != 0, 'Production state found: inventory must be extended before teardown'
+        assert '(404)' in result.stderr or 'Not Found' in result.stderr, 'Cannot establish absence of production state'
     return states
 
 
