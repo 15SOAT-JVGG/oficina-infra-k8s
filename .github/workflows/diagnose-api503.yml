@@ -86,3 +86,20 @@ jobs:
           }
           print(json.dumps({key:len(re.findall(pattern,data,re.I)) for key,pattern in patterns.items()}))
           PYTHON
+
+      - name: Inspect private tracing transport
+        run: |
+          set -euo pipefail
+          export KUBECONFIG="$RUNNER_TEMP/tracing-kubeconfig"
+          trap 'rm -f "$KUBECONFIG"' EXIT
+          aws eks update-kubeconfig --name oficina --region "$AWS_REGION" >/dev/null
+          kubectl get services -n observability -o json | jq '[.items[] | select(.metadata.name | test("alloy|tempo")) | {name:.metadata.name,ports:.spec.ports}]'
+          kubectl get endpoints -n observability -o json | jq '[.items[] | select(.metadata.name | test("alloy|tempo")) | {name:.metadata.name,ready:([.subsets[]?.addresses[]?]|length),ports:[.subsets[]?.ports[]?]}]'
+          kubectl get configmap oficina-mecanica-config -n homolog -o json | jq '.data | with_entries(select(.key|startswith("OTEL_")))'
+          kubectl logs -n observability -l app.kubernetes.io/name=alloy --since=30m --tail=300 > "$RUNNER_TEMP/alloy.log"
+          python3 - <<'PYTHON'
+          import json,re,os
+          data=open(os.environ['RUNNER_TEMP']+'/alloy.log').read()
+          print(json.dumps({key:len(re.findall(pattern,data,re.I)) for key,pattern in {'refused':'connection refused','unavailable':'unavailable','export_failure':'export.*fail|fail.*export','errors':'level=error'}.items()}))
+          PYTHON
+          rm -f "$RUNNER_TEMP/alloy.log"
