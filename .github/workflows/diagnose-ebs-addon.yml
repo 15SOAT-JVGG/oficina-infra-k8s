@@ -181,6 +181,7 @@ jobs:
           exit "$diagnostic_errors"
 
       - name: Inspect observability rollout and public load balancers
+        if: always()
         run: |
           kubectl get pods,deployments,statefulsets,services,pvc -n observability -o wide
           kubectl get events -n observability --sort-by=.metadata.creationTimestamp | tail -n 30
