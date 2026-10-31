@@ -119,3 +119,20 @@ compatibilidade com Kubernetes 1.34 e alterações de CRD antes de atualizar pin
 - [Grafana Community Helm charts: Loki e Tempo](https://github.com/grafana-community/helm-charts)
 - [Grafana Alloy chart](https://github.com/grafana/alloy/tree/main/operations/helm/charts/alloy)
 - [Blackbox Exporter chart](https://github.com/prometheus-community/helm-charts/tree/main/charts/prometheus-blackbox-exporter)
+
+## Navegação da demonstração
+
+O Grafana publica somente dois dashboards na pasta `FIAP`:
+
+- **01 - Oficina: visão geral**: coleta da API, uptime público, tráfego, erros, latência e logs recolhidos numa seção expansível. É a página inicial após login.
+- **02 - Oficina: infraestrutura**: nós, pods, CPU, memória e réplicas, com seleção de ambiente.
+
+Os dashboards genéricos do chart são desativados, mantendo exporters e regras de alerta.
+O deploy relê o ServiceMonitor versionado no repositório da aplicação para os namespaces
+com Service de management existente. Isso cobre a instalação da aplicação antes do CRD
+ServiceMonitor. Também aplica a sondagem pública de homologação após instalar o Blackbox.
+
+O workflow `Audit Grafana requirement evidence` consulta dashboards, métricas e metadados
+de logs/traces sem imprimir CPF, credenciais, conteúdo dos logs ou IDs de trace. A opção
+`verify_simplified` confere os dois dashboards e a página inicial. A auditoria não substitui
+os indicadores de negócio nem o teste de alertas específicos do processamento de OS.

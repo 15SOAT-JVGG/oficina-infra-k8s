@@ -1,0 +1,23 @@
+name: Audit Grafana requirement evidence
+on:
+  push:
+    branches: [codex/simplify-grafana]
+  workflow_dispatch:
+    inputs:
+      verify_simplified:
+        type: boolean
+        default: false
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    environment: homolog
+    timeout-minutes: 5
+    env:
+      GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
+      REQUIRE_SIMPLE: ${{ inputs.verify_simplified && 'true' || 'false' }}
+      GRAFANA_URL: https://dcs5hfax0e.execute-api.us-east-1.amazonaws.com/observability
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 observability/scripts/audit-grafana.py
