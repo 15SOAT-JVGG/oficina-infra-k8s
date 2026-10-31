@@ -103,3 +103,13 @@ jobs:
           print(json.dumps({key:len(re.findall(pattern,data,re.I)) for key,pattern in {'refused':'connection refused','unavailable':'unavailable','export_failure':'export.*fail|fail.*export','errors':'level=error'}.items()}))
           PYTHON
           rm -f "$RUNNER_TEMP/alloy.log"
+
+      - name: Exercise a sampled public authentication request
+        run: |
+          python3 - <<'PYTHON'
+          import secrets,urllib.request,urllib.error
+          req=urllib.request.Request('https://dcs5hfax0e.execute-api.us-east-1.amazonaws.com/v1/auth/login',data=b'{"username":"fiap-trace-probe","password":"invalid-probe"}',headers={'Content-Type':'application/json','traceparent':'00-'+secrets.token_hex(16)+'-'+secrets.token_hex(8)+'-01','X-Request-ID':'phase3-trace-probe'},method='POST')
+          try:
+              with urllib.request.urlopen(req,timeout=30) as res: print('sampled_auth_http',res.status)
+          except urllib.error.HTTPError as e: print('sampled_auth_http',e.code)
+          PYTHON
