@@ -41,5 +41,6 @@ jobs:
               --from-file="$dashboard-overview.json=observability/dashboards/$dashboard-overview.json" \
               --dry-run=client -o yaml | kubectl label --local -f - grafana_dashboard=1 -o yaml | kubectl apply -f -
           done
+          kubectl apply -f observability/rules/work-order-alerts.yaml
       - name: Verify saved dashboard readability
         run: python3 observability/scripts/verify-readable-dashboards.py

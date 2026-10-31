@@ -324,6 +324,170 @@
       "type": "timeseries"
     },
     {
+      "id": 30,
+      "title": "OS abertas hoje",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 12,
+        "w": 6,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "Aguardando coleta"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max(workshop_work_orders_opened_today{namespace=\"$namespace\"})"
+        }
+      ],
+      "description": "Abertas desde meia-noite no fuso do PostgreSQL. Agregado persistido; max evita contar uma vez por réplica."
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "noValue": "Sem dados"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 12,
+        "w": 18,
+        "h": 6
+      },
+      "id": 31,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max by(stage) (workshop_work_order_stage_duration_seconds{namespace=\"$namespace\"})",
+          "legendFormat": "{{stage}}"
+        }
+      ],
+      "title": "Tempo médio por etapa concluída",
+      "type": "timeseries",
+      "description": "Diagnóstico=DIAGNOSIS; Execução=IN_PROGRESS; Finalização=COMPLETED até DELIVERED. Histórico completo, somente etapas encerradas; OS canceladas excluídas. Réplicas usam max, não soma."
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "Sem dados"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 18,
+        "w": 12,
+        "h": 6
+      },
+      "id": 32,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by(integration) (increase(workshop_integration_calls_total{namespace=\"$namespace\",outcome=\"failure\"}[15m]))",
+          "legendFormat": "{{integration}}"
+        }
+      ],
+      "title": "Falhas das integrações · últimos 15 min",
+      "type": "timeseries",
+      "description": "SMTP e consulta dos indicadores no PostgreSQL. Falha SMTP não desfaz a OS; falhas de coleta não são reportadas como zero."
+    },
+    {
+      "id": 33,
+      "title": "Alertas de OS disparados",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 18,
+        "w": 12,
+        "h": 6
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "Aguardando coleta"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(ALERTS{alertname=~\"WorkOrderProcessingFailure|WorkOrderNotificationFailure\",namespace=\"$namespace\",alertstate=\"firing\"}) or vector(0)"
+        }
+      ],
+      "description": "Alertas Prometheus: processamento da OS e entrega SMTP. Zero indica nenhuma ocorrência disparada; pendências aparecem nas regras do Prometheus."
+    },
+    {
       "id": 14,
       "title": "Logs · abrir para investigar",
       "type": "row",
@@ -332,7 +496,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 12
+        "y": 24
       },
       "panels": [
         {
@@ -347,7 +511,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 13
+            "y": 25
           },
           "targets": [
             {
