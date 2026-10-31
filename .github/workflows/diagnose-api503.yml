@@ -11,6 +11,7 @@ jobs:
     timeout-minutes: 5
     env:
       AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+      TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
       AWS_ACCESS_KEY_ID: ${{ secrets.HOMOLOG_AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.HOMOLOG_AWS_SECRET_ACCESS_KEY }}
       AWS_SESSION_TOKEN: ${{ secrets.HOMOLOG_AWS_SESSION_TOKEN }}
@@ -37,3 +38,21 @@ jobs:
           for (status,error,latency),count in summary.items():
               print(json.dumps({'integration_status':status,'integration_error':error,'integration_latency_ms':latency,'count':count}))
           PYTHON
+
+      - name: Inspect internal NLB zones, cross-zone routing and target health
+        run: |
+          set -euo pipefail
+          umask 077
+          contract="$RUNNER_TEMP/upstream.json"
+          trap 'rm -f "$contract"' EXIT
+          aws s3 cp "s3://$TF_STATE_BUCKET/oficina/config/v1/homolog/upstream.json" "$contract" --only-show-errors
+          listener="$(jq -er '.integration_listener_arn' "$contract")"
+          load_balancer="$(aws elbv2 describe-listeners --listener-arns "$listener" --query 'Listeners[0].LoadBalancerArn' --output text)"
+          aws elbv2 describe-load-balancers --load-balancer-arns "$load_balancer" \
+            --query 'LoadBalancers[].{scheme:Scheme,zones:AvailabilityZones[].ZoneName,state:State.Code}' --output json
+          aws elbv2 describe-load-balancer-attributes --load-balancer-arn "$load_balancer" \
+            --query 'Attributes[?contains(Key, `cross_zone`)]' --output json
+          for target_group in $(aws elbv2 describe-target-groups --load-balancer-arn "$load_balancer" --query 'TargetGroups[].TargetGroupArn' --output text); do
+            aws elbv2 describe-target-health --target-group-arn "$target_group" \
+              --query 'TargetHealthDescriptions[].{zone:Target.AvailabilityZone,state:TargetHealth.State,reason:TargetHealth.Reason}' --output json
+          done
