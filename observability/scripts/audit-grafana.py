@@ -31,6 +31,8 @@ print('datasources', json.dumps([{k:d.get(k) for k in ('uid', 'name', 'type')} f
 for name, expr in {
     'scrape_targets': 'count by(job) (up)',
     'healthy_targets': 'sum by(job) (up)',
+    'app_target_namespaces': 'count by(namespace) (up{job="oficina-mecanica-management"})',
+    'http_metric_names': 'count by(__name__) ({job="oficina-mecanica-management",__name__=~"http.*"})',
     'http_series': 'count(http_server_requests_seconds_count{namespace="homolog"})',
     'latency_histograms': 'count(http_server_requests_seconds_bucket{namespace="homolog"})',
     'business_series': 'count({__name__=~".*work.?order.*|.*workshop.*"})',
