@@ -41,5 +41,5 @@ API: adminUsername=admin; adminPassword deve receber a senha APP_SEED_ADMIN_PASS
 do ambiente homolog no seu Postman. O login do cliente usa demoCpf e recebe um JWT
 automaticamente. Para Grafana, usuário admin e sua senha própria.
 
-Esta execução comprova o seed. Não comprova que os 503 de carga foram resolvidos nem
-que os indicadores de negócio/traces/alertas pendentes já estejam implementados.
+Esta execução comprova o seed. A validação posterior de carga, indicadores de negócio,
+traces e alertas está na [matriz atualizada](VALIDACAO.md).

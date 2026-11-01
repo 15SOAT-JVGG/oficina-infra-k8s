@@ -1,4 +1,4 @@
-[PDF de entrega ao Portal - preliminar](output/pdf/fiap-fase3-entrega-portal.pdf)
+[PDF de entrega ao Portal](output/pdf/fiap-fase3-entrega-portal.pdf)
 
 [Fase 3: comece aqui - Postman, massas, PDFs, seed e demonstração](docs/fase3/COMECE-AQUI.md)
 

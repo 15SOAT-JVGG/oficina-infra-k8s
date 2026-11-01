@@ -1,103 +1,68 @@
 # Matriz de atendimento - Fase 3
 
-Revisão atualizada: 31/10/2026 (BRT). Base: enunciado fornecido pelo usuário, páginas 2-5,
-branches homolog e evidência de execução. O vídeo foi recebido e incluído no PDF do Portal;
-a revisão de conteúdo do vídeo e as pendências técnicas continuam abertas. **O projeto ainda não está integralmente pronto para a entrega.**
+Revisão: 31/10/2026 (BRT). Conferência baseada no enunciado fornecido, no código,
+nos workflows e em testes pelo API Gateway. Esta matriz registra a validação anterior
+ao encerramento do Learner Lab solicitado pelo responsável.
 
-Estados: **Comprovado** = evidência observada; **Implementado** = fonte/configuração existente,
-sem demonstração completa; **Parcial** = cobertura incompleta; **Pendente** = item ainda faltante.
+## Requisitos e evidências
 
-## Infraestrutura, segurança e CI/CD
+| Requisito | Resultado e evidência |
+|---|---|
+| API Gateway e rotas protegidas | HTTPS, integração privada, Swagger/OpenAPI e Authorizer validados no [deploy completo](https://github.com/15SOAT-JVGG/oficina-app/actions/runs/41254012718) |
+| Autenticação serverless por CPF | CPF válido de CUSTOMER ativo retorna 200/JWT; CPF inválido retorna 400; cliente sintético inativo retorna 401 no teste público final. O cliente exclusivo de validação foi removido após o teste |
+| JWT e RBAC | CUSTOMER consulta suas OS com 200; ausência de token 401; token malformado/alterado e acesso operacional indevido 403. [Matriz do Authorizer](https://github.com/15SOAT-JVGG/oficina-lambda-auth/actions/runs/41149042492) e smoke do deploy atual |
+| Ciclo de OS | As 12 requisições da coleção passaram: abertura 201, diagnóstico 200, orçamento 201, login CPF 200, consulta 200, erros 401/403, aprovação 200, conclusão 200, entrega 200 e leitura final DELIVERED 200 |
+| Quatro repositórios e proteção de main | Aplicação, Lambda, Kubernetes e banco separados; rulesets exigem PR; READMEs contêm propósito, stack, diagramas, execução/deploy e links da API |
+| CI/CD e deploy por branch | Workflows validam PRs e publicam automaticamente pushes em homolog/production. Execução real foi comprovada em homolog; não se declara execução de produção neste Lab |
+| RDS PostgreSQL gerenciado | Consumido pela aplicação e pela autenticação, com cliente ativo/inativo verificado pelo fluxo público. [Apply do banco](https://github.com/15SOAT-JVGG/oficina-infra-db/actions/runs/40980315346) |
+| Kubernetes escalável | EKS, Metrics Server e HPA 1-6 pods. [Teste aprovado](https://github.com/15SOAT-JVGG/oficina-app/actions/runs/41250722643): 704 tentativas de carga, zero erros, 2 -> 5 pods Ready -> 2. [Revalidação após os indicadores de negócio](https://github.com/15SOAT-JVGG/oficina-app/actions/runs/41254582460): 654 tentativas, zero erros, 2 -> 5 -> 2 pods, p95 cliente 443ms |
+| Terraform e containers | Estados separados, planos com lock, EKS/Gateway/RDS/Lambdas provisionados; Dockerfile da aplicação. Lambdas usam ZIP Go; os repositórios Terraform não exigem container de runtime |
+| CPU, memória e health/uptime | Dois dashboards FIAP; memória em MB, CPU em mCPU, probes públicas e readiness/liveness. Histórico depende da janela e da vida dos pods da stack |
+| Latência, tráfego e erros HTTP | Histogramas e contadores publicados após corrigir limites de Timer para nanossegundos; p95 e taxa por rota consultáveis. Sem tráfego recente, p95 não possui amostra; não se substitui por um zero fictício |
+| Volume diário de OS | Gauge persistido `workshop_work_orders_opened_today`, consultado do PostgreSQL a cada 30s; painel usa max entre réplicas. Dia do banco em UTC; não soma o mesmo agregado por pod |
+| Duração média por status | `workshop_work_order_stage_duration_seconds`: DIAGNOSIS (Diagnóstico), IN_PROGRESS (Execução), COMPLETED até DELIVERED (Finalização). Considera etapas encerradas do histórico e exclui OS canceladas; sem etapa encerrada, mantém ausência de amostra |
+| Falhas de integrações | Contadores dedicados de sucesso/falha para SMTP e coleta dos indicadores no PostgreSQL, com painel por integração. O SMTP do sandbox apresentou falhas reais; a OS continuou normalmente e o sinal foi registrado |
+| Alertas de OS | Regras `WorkOrderProcessingFailure` (5xx em rota de OS) e `WorkOrderNotificationFailure` (SMTP). 4xx esperados não disparam falha de processamento. Teste promtool comprova firing/resolved; auditoria observou alerta SMTP real em firing |
+| Logs e traces correlacionados | JSON/MDC com requestId e traceId; log de conclusão sem CPF, token, senha ou corpo. Auditoria encontrou traces reais da aplicação no Tempo e logs com os mesmos identificadores, sem exportar seus valores |
+| Arquitetura e modelo de dados | Componentes, sequências de CPF/abertura de OS, RFCs, ADRs, ER e justificativa formal do PostgreSQL publicados neste diretório, com PDFs e diagramas separados |
+| Vídeo <=15 minutos | [Demonstração Fase 3](https://youtu.be/hgZPRw7hWeA), 13min29s. Acesso/duração conferidos nos metadados; o autor confirmou a demonstração de logs e traces. Não se apresenta essa confirmação como revisão independente do vídeo |
+| PDF e avaliador | PDF único do Portal com quatro repositórios, vídeo, documentação e confirmação de `soat-architecture`, reconfirmado via API nos quatro repositórios |
 
-| Requisito | Estado | Evidência e limite |
-|---|---|---|
-| API Gateway de entrada | Comprovado | API pública em HTTPS, integrações privadas e Swagger/OpenAPI acessíveis |
-| Função serverless autentica CPF | Comprovado | Cliente sintético ativo confirmado; login 200; fonte consulta status no RDS |
-| JWT e proteção de rotas sensíveis | Comprovado | CUSTOMER 200; sem token 401; Bearer inválido/alterado e RBAC 403 |
-| CPF inválido/inativo | Implementado | Validação e checagem active no código/testes; não foi desativado cliente para teste de runtime nesta revisão |
-| Quatro repositórios separados | Comprovado | app, lambda-auth, infra-k8s e infra-db existentes e públicos |
-| CI/CD funcional dos quatro | Comprovado em homolog | Runs de entrega concluídos dos quatro; o DB não foi reaplicado com a sessão atual |
-| main exige PR | Comprovado | Regras ativas de rulesets nos quatro; a API antiga de branch protection sozinha não refletia essas regras |
-| Deploy automático homolog/production | Implementado | Triggers por branch nos quatro workflows; nenhuma execução em production encontrada |
-| Banco gerenciado | Comprovado | RDS PostgreSQL provisionado e consumido por aplicação/autenticação; sem inspeção SQL nesta revisão |
-| Kubernetes e escalabilidade | Implementado | EKS, Metrics Server e HPA 1-6 réplicas; teste atual de carga/subida/descida ainda deve ser gravado |
-| Provisionamento Terraform | Comprovado | Applies homolog e reconciliação com plano/lock; stack Helm é etapa separada |
-| Dockerfile quando aplicável | Implementado | Aplicação tem Dockerfile; Lambdas são binários ZIP; repositórios Terraform não necessitam container de runtime |
-| Avaliador soat-architecture | Comprovado | Acesso confirmado nos quatro repositórios via API do GitHub |
+[Resultados HTTP do teste público final](evidencias/smoke-publico-final.json) e
+[resumo persistido da carga/HPA final](evidencias/carga-hpa-final.json), sem identificadores ou credenciais.
 
-## Observabilidade
+## Evidência final da observabilidade
 
-| Requisito | Estado | Evidência e limite |
-|---|---|---|
-| Integração com ferramenta de observabilidade | Comprovado | Stack Prometheus/Grafana/Loki/Tempo/Alloy/Blackbox publicada |
-| Grafana simples e acessível | Comprovado | 31 dashboards reduzidos a 2 na pasta FIAP; home aponta para a visão geral; login e banco HTTP 200 |
-| CPU e memória Kubernetes | Comprovado | Exporters/targets disponíveis e dashboard de recursos versionado |
-| Coleta da API | Comprovado | 2 targets oficina-mecanica-management em homolog, ambos UP após reaplicar ServiceMonitor |
-| Latência e tráfego HTTP | Comprovado em homolog | Após corrigir os limites de Timer para nanossegundos, auditoria 41246983292 encontrou 9 séries de contagem e 99 buckets. Painéis consultam contagem, erros e p95; ausência de tráfego recente pode deixar p95 sem amostra |
-| Healthchecks/uptime | Comprovado com limite | Probe pública com sucesso=1, readiness/liveness nos manifests. Probe mede Swagger; não representa todas as operações/integrações |
-| Alertas de falha no processamento de OS | Pendente | Existem alertas técnicos genéricos; faltam sinal/regra específica de OS, demonstração firing/resolved e evidência do destino de notificação |
-| Logs JSON | Comprovado | Amostra Loki contém somente entradas JSON; nenhum conteúdo foi exportado para este documento |
-| Correlação entre requisições | Parcial | Filtro X-Request-ID/MDC existe; amostra teve traceId, mas não requestId. Falta evidenciar um fluxo correlacionado real |
-| Traces em execução | Pendente de evidência | Tempo consultado sem traces; presença de traceId no log não comprova exportação/consulta do trace. Lambda OTLP é opcional e não foi comprovado |
-| Volume diário de OS | Pendente | Nenhuma série/agregação de negócio correspondente nos dashboards/auditoria |
-| Tempo médio por etapa | Pendente | Endpoint atual mede abertura->fechamento, sem separar Diagnóstico/Execução/Finalização no Grafana |
-| Erros/falhas de integrações | Parcial | Há sinal HTTP 5xx e logs, sem painel/métrica dedicada das integrações como SMTP/DB/autenticação |
+[Auditoria com verificações obrigatórias](https://github.com/15SOAT-JVGG/oficina-infra-k8s/actions/runs/41254775789):
+volume diário disponível, três séries de duração, contadores de integração/processamento,
+duas regras de OS e traces com logs correspondentes. Resultado: `phase3_observability_validation PASSED`.
 
-## Documentação e entrega
+A auditoria observou `WorkOrderNotificationFailure=firing` após falhas SMTP reais;
+a [conferência posterior](https://github.com/15SOAT-JVGG/oficina-infra-k8s/actions/runs/41255043752)
+confirmou a resolução para `inactive` e passou novamente em todas as verificações.
+`WorkOrderProcessingFailure` permaneceu inativo durante o ciclo da OS bem-sucedido.
+As regras e o teste reprodutível de disparo/resolução estão em
+[observability/rules](../../observability/rules/) e [observability/tests](../../observability/tests/).
+Alertas são consultáveis no Grafana/Prometheus/Alertmanager; não foi configurada entrega externa por e-mail ou chat.
 
-| Requisito | Estado | Evidência e limite |
-|---|---|---|
-| Diagrama de componentes completo | Documentado | ARQUITETURA.md + componentes PNG/SVG/Mermaid |
-| Sequência de CPF e abertura de OS | Documentado | SEQUENCIAS.md + dois diagramas exportáveis/editáveis |
-| RFCs | Documentado | RFCs cloud, PostgreSQL e autenticação, com justificativas e limites |
-| ADRs | Documentado | Comunicação, HPA e observabilidade; complementam os ADRs existentes da aplicação |
-| Justificativa do banco / ER / relacionamentos | Documentado | MODELO-DE-DADOS.md + ER atualizado, inclusive active, app_users e tokens de decisão |
-| README de cada repo com propósito/stack/deploy/diagrama | Parcial | Existem os quatro; faltam alinhamento/link explícito de Swagger/deploy/documentação em alguns e atualização da referência ao vídeo antigo |
-| Vídeo atual <=15 min | Disponível; conteúdo não revisado | [Vídeo](https://youtu.be/hgZPRw7hWeA), 13min29s; metadados acessíveis sem login em 31/10/2026 |
-| PDF único para o Portal | Preparado com vídeo | Duas páginas com repositórios, vídeo, documentação e avaliador; revisão técnica permanece pendente |
+## Validação de código
 
-## Evidências reproduzíveis
+- Aplicação: `./mvnw verify` completo em Java 21, inclusive após consolidar homolog em main;
+  [PR 90 com CI aprovado](https://github.com/15SOAT-JVGG/oficina-app/pull/90).
+- PostgreSQL 16: consulta dos agregados verificada com datas conhecidas, três durações,
+  abertura diária e exclusão de cancelamentos/etapas ainda abertas.
+- Lambda: testes Go e `go vet`, além dos checks do PR de consolidação.
+- Terraform: formatação/validação de PRs e planos de remoção limitados aos recursos FIAP.
 
-- [Publicação do Grafana simplificado e reconciliação](https://github.com/15SOAT-JVGG/oficina-infra-k8s/actions/runs/41150666377).
-- [Auditoria: dois dashboards, home, API targets, métricas, uptime, logs e Tempo](https://github.com/15SOAT-JVGG/oficina-infra-k8s/actions/runs/41151717405).
-- [Matriz HTTP real do Authorizer](https://github.com/15SOAT-JVGG/oficina-lambda-auth/actions/runs/41149042492).
-- [Confirmação da conta sintética ativa](https://github.com/15SOAT-JVGG/oficina-app/actions/runs/41148875214).
-- [Deploy da aplicação em homolog](https://github.com/15SOAT-JVGG/oficina-app/actions/runs/41072488615).
-- [Deploy da Lambda em homolog](https://github.com/15SOAT-JVGG/oficina-lambda-auth/actions/runs/40991742239).
-- [Apply de banco em homolog](https://github.com/15SOAT-JVGG/oficina-infra-db/actions/runs/40980315346).
+## Limites conhecidos do ambiente acadêmico
 
-## Ordem para fechar a fase
-
-1. Restabelecer as séries HTTP/histogramas e demonstrar trace real no Tempo, correlacionado ao log.
-2. Implementar as agregações persistentes de volume diário e duração por etapa; definir a semântica de Finalização/cancelamentos.
-3. Instrumentar falhas de OS/integrações e demonstrar alerta disparando e resolvendo.
-4. Atualizar links/READMEs dos quatro repositórios e registrar evidência de HPA/pipelines. Conferir credenciais do DB respeitando a restrição atual de secrets a três repositórios; não ampliar esse escopo automaticamente.
-5. Vídeo recebido (13min29s) e incluído no PDF do Portal; revisar o conteúdo, fechar as lacunas técnicas e concluir a revisão de submissão.
-
-A política do Lab impediu o uso de EBS CSI com a identidade necessária. emptyDir permitiu a
-homologação, mas histórico de telemetria é volátil. O enunciado não determina EBS, Multi-AZ
-ou um fornecedor específico de monitoramento: essas limitações não são transformadas aqui
-em exigências inventadas, mas devem ficar claras na apresentação.
-
-## Atualização operacional - 31/10/2026 (BRT)
-
-- Deploy homolog concluído: https://github.com/15SOAT-JVGG/oficina-app/actions/runs/41158248740
-- Seed espaçado aprovado: seis OS, uma por estado; HTTP 200/201, sem 503 nesta execução:
-  https://github.com/15SOAT-JVGG/oficina-app/actions/runs/41158958643
-- Carga separada: 211 tentativas, oito 503; teste reprovado corretamente:
-  https://github.com/15SOAT-JVGG/oficina-app/actions/runs/41158493007
-- Réplicas Ready passaram de duas para quatro durante a carga e retornaram a duas
-  nas amostras do seed posterior. Isso comprova reação do HPA, sem comprovar estabilidade.
-- NLB cross-zone habilitado, mas 503 persistiu. Há também falhas SMTP por limite de envio;
-  elas não explicam os 503 da carga de login, que não envia e-mail. Causa ainda aberta.
-- Indicadores de negócio, histogramas HTTP, traces e alertas específicos continuam pendentes.
-
-## Atualização de dashboards e HTTP - 31/10/2026
-
-- Publicação e verificação dos dashboards: run 41246150683, seguido das atualizações
-  dos PRs 35/36. Logs recolhidos, linhas curtas e detalhes por clique; memória em MB.
-- Correção dos limites de histogramas: app PR 89. Deploy 41246450540 passou, incluindo smokes.
-- Auditoria 41246983292 confirmou http_server_requests_seconds_count e _bucket: 9 e 99
-  séries respectivamente. Isso fecha a ausência dessas séries, não a instrumentação de negócio.
-- Traces reais no Tempo, volume diário, duração por etapa e alertas de OS permanecem pendentes.
-- Não foi repetido teste de carga/HPA para declarar os 503 resolvidos.
+- Observabilidade usa emptyDir: histórico de métricas/logs/traces é volátil. EBS CSI
+  não foi novamente aplicado após os bloqueios IAM do Academy.
+- Os 503 da carga antiga não foram reproduzidos no teste aprovado de 704 tentativas;
+  isso comprova aquela janela e carga limitada, sem afirmar capacidade ilimitada ou uma causa única.
+- O SMTP é sandbox e pode recusar entregas por limite/indisponibilidade. Essas falhas
+  são sinalizadas e não revertem o atendimento; o teste do ciclo não promete entrega de e-mail.
+- Homolog foi executado; production possui automação configurada e não foi implantado
+  apenas para produzir evidência adicional ou aumentar custo no Lab.
+- Os endpoints de runtime dependem dos recursos AWS. Após o destroy solicitado,
+  a avaliação deve usar o vídeo, código, diagramas e evidências dos workflows.

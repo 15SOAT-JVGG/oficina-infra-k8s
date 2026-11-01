@@ -154,3 +154,19 @@ a demonstração e consultar o resumo. Não apresentar a execução reprovada co
   recente, gerar poucas chamadas da collection e aguardar o intervalo de coleta; não
   chamar um p95 vazio de zero. Erros rejeitados no Gateway/Authorizer são outro salto e
   não devem ser confundidos com respostas 5xx emitidas pela aplicação.
+
+
+## Evidências disponíveis ao concluir a gravação
+
+- [Vídeo final, 13min29s](https://youtu.be/hgZPRw7hWeA).
+- [Deploy completo e smokes](https://github.com/15SOAT-JVGG/oficina-app/actions/runs/41254012718).
+- [Auditoria obrigatória de métricas, regras e correlação log/trace](https://github.com/15SOAT-JVGG/oficina-infra-k8s/actions/runs/41254775789).
+- [Carga de 704 tentativas sem erro, HPA 2 -> 5 -> 2](https://github.com/15SOAT-JVGG/oficina-app/actions/runs/41250722643).
+
+Ao explicar os novos painéis: “O volume diário vem do banco, e não da memória do pod.
+As durações usam o histórico de etapas encerradas; cancelamentos são excluídos.
+Falhas SMTP aparecem como falhas da integração e geram alerta sem desfazer a OS.”
+O ambiente é encerrado depois da validação, conforme solicitado; os links de runtime dependem de AWS ativa.
+
+Revalidação da versão final: [654 tentativas sem erro e HPA 2 -> 5 -> 2](https://github.com/15SOAT-JVGG/oficina-app/actions/runs/41254582460).
+O alerta SMTP foi observado disparando e depois [resolvendo](https://github.com/15SOAT-JVGG/oficina-infra-k8s/actions/runs/41255043752), sem derrubar o ciclo da OS.

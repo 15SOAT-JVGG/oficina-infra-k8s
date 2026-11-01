@@ -2,7 +2,7 @@
   "revisao": "31/10/2026",
   "video_url": "https://youtu.be/hgZPRw7hWeA",
   "video_duracao_segundos": 809,
-  "pendencias_tecnicas": true,
+  "pendencias_tecnicas": false,
   "avaliador_verificado_em": "31/10/2026",
   "repositorios": [
     {
@@ -164,5 +164,6 @@
   ],
   "matriz_url": "https://github.com/15SOAT-JVGG/oficina-infra-k8s/blob/main/docs/fase3/VALIDACAO.md",
   "video_acesso_verificado_em": "31/10/2026",
-  "video_acesso": "Acessível sem login na consulta de metadados do YouTube"
+  "video_acesso": "Acessível sem login na consulta de metadados do YouTube",
+  "video_conteudo_confirmado_pelo_autor_em": "31/10/2026"
 }

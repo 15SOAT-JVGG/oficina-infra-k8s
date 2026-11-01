@@ -7,8 +7,8 @@ implementação, evidência observada e pendências; documentação não substit
 ## PDF para enviar à instituição
 
 [Documento único de entrega ao Portal](../../output/pdf/fiap-fase3-entrega-portal.pdf):
-versão preliminar, com links dos quatro repositórios, documentação e confirmação do
-avaliador e vídeo de 13min29s; falta concluir a revisão técnica registrada na matriz.
+versão para submissão, com os quatro repositórios, documentação, confirmação do
+avaliador e vídeo de 13min29s. A [matriz de validação](VALIDACAO.md) apresenta os testes e limites observados.
 [Como atualizar a entrega](ENTREGA.md).
 
 ## Acesso rápido
@@ -58,7 +58,7 @@ tabelas nem dados de clientes. Nenhuma credencial ou dado de cliente integra est
 
 [PDF técnico desta revisão](../../output/pdf/fiap-fase3-dossie-tecnico.pdf).
 Os textos usam A4; os quatro diagramas usam páginas A3 para preservar a legibilidade.
-O PDF é um dossiê pré-entrega: o vídeo e as lacunas técnicas continuam pendentes.
+O dossiê complementa o PDF único de links exigido para o Portal; o vídeo já está incluído na entrega.
 
 Para reproduzir a partir da raiz do repositório, usar Python com Pillow/ReportLab e Graphviz:
 `python3 docs/fase3/gerar-diagramas.py` e `python3 docs/fase3/gerar-dossie.py`.

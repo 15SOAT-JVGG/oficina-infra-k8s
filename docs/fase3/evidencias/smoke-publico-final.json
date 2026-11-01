@@ -1,0 +1,70 @@
+{
+  "revisao": "31/10/2026 BRT",
+  "ambiente": "homolog",
+  "entrada": "API Gateway HTTPS",
+  "deploy_run": "https://github.com/15SOAT-JVGG/oficina-app/actions/runs/41254012718",
+  "cenarios": [
+    {
+      "scenario": "01 - Login funcionário",
+      "http": 200
+    },
+    {
+      "scenario": "02 - Abrir OS - RECEIVED",
+      "http": 201
+    },
+    {
+      "scenario": "03 - Iniciar diagnóstico - DIAGNOSIS",
+      "http": 200
+    },
+    {
+      "scenario": "04 - Gerar orçamento - WAITING_APPROVAL",
+      "http": 201
+    },
+    {
+      "scenario": "05 - Login cliente por CPF",
+      "http": 200
+    },
+    {
+      "scenario": "06 - Cliente consulta suas OS",
+      "http": 200
+    },
+    {
+      "scenario": "07 - Sem token - 401",
+      "http": 401
+    },
+    {
+      "scenario": "08 - CUSTOMER sem permissão operacional - 403",
+      "http": 403
+    },
+    {
+      "scenario": "09 - Cliente aprova orçamento - IN_PROGRESS",
+      "http": 200
+    },
+    {
+      "scenario": "10 - Funcionário conclui - COMPLETED",
+      "http": 200
+    },
+    {
+      "scenario": "11 - Entregar veículo - DELIVERED",
+      "http": 200
+    },
+    {
+      "scenario": "12 - Consultar OS final",
+      "http": 200
+    },
+    {
+      "scenario": "CPF inválido",
+      "http": 400
+    },
+    {
+      "scenario": "Cliente inativo",
+      "http": 401
+    },
+    {
+      "scenario": "Limpeza do cliente de validação",
+      "http": 204
+    }
+  ],
+  "resultado": "aprovado",
+  "observacao": "Requisições reais, sem repetição automática de escritas. Identificadores, documentos pessoais, tokens e senhas não foram exportados."
+}

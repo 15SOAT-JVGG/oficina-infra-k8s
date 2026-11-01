@@ -48,3 +48,15 @@ continha dois 503 com integrationLatency=9001 ms, diferente dos 29 segundos ante
 logs não continha os padrões de falha SMTP, timeout, pool ou thread bloqueada pesquisados.
 Isso não prova ausência de falhas nem determina a causa. O novo perfil leve ainda não foi
 executado; não houve novo seed nem apply nesta investigação.
+
+
+## Revalidação de encerramento
+
+A execução [41250722643](https://github.com/15SOAT-JVGG/oficina-app/actions/runs/41250722643)
+registrou 704 tentativas de carga, zero erros, p95 cliente de 287ms e HPA 2 -> 5 -> 2.
+O ciclo público final de 12 requisições também terminou com os HTTP esperados.
+A [repetição após o deploy de telemetria](https://github.com/15SOAT-JVGG/oficina-app/actions/runs/41254582460)
+fica como evidência adicional. Esses resultados delimitam a carga validada; não demonstram uma causa única dos 503 anteriores.
+
+A revalidação 41254582460 passou: 654 tentativas de carga, zero erros, HPA 2 -> 5 -> 2
+e p95 cliente de 443ms. Os códigos HTTP de login foram 200; não ocorreu 503 nesta execução.

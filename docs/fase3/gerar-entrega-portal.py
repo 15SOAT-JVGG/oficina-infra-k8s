@@ -54,7 +54,7 @@ if video:
     story.extend([para(link(video,video)),para(f'Duração conferida nos metadados do YouTube: {seconds//60}min{seconds%60:02}s. Link acessível sem login na conferência de 31/10/2026.',small)])
 else:
     story.append(block('<b>Link do vídeo: PENDENTE DE GRAVAÇÃO</b><br/>Publicar no YouTube ou Vimeo, público ou não listado, com duração máxima de 15 minutos. Incluir aqui a URL e a duração antes do envio.'))
-story.append(para('O vídeo deve demonstrar autenticação por CPF, pipeline e deploy automático, consumo de APIs protegidas, dashboard ao vivo, logs e traces.',small))
+story.append(para('Demonstração: autenticação por CPF, pipeline e deploy automático, APIs protegidas, dashboard ao vivo, logs e traces. Conteúdo de logs/traces confirmado pelo autor.',small))
 story.extend([PageBreak(),para('3. Documentação arquitetural',heading),para('Documentação publicada no repositório de infraestrutura Kubernetes. Os links abaixo são clicáveis; os PDFs individuais complementam o dossiê.',small)])
 rows=[[para('<b>Conteúdo</b>',small),para('<b>Documento / acesso</b>',small)]]
 for label,links in DATA['documentacao']:
@@ -63,7 +63,7 @@ table=Table(rows,colWidths=[168,339],repeatRows=1,hAlign='LEFT');table.setStyle(
 story.extend([para('4. Acesso do avaliador',heading),para('Usuário GitHub: <b>soat-architecture</b>. Sua inclusão como colaborador foi reconfirmada via API do GitHub em '+DATA['avaliador_verificado_em']+'.',small)])
 for r in DATA['repositorios']:
     story.append(para(('Confirmado' if r['avaliador_confirmado'] else 'Pendente')+' - '+html.escape(r['nome']),small))
-story.extend([para('Acessos complementares',heading),para(' | '.join(link(label,url) for label,url in DATA['acessos']),small),para('Os endpoints de homologação dependem do Learner Lab ativo. O documento não contém senhas, tokens ou credenciais. O avaliador acessa código e documentação pelos repositórios.',small),block('<b>Antes de enviar:</b> '+('incluir o vídeo (até 15 minutos), ' if not video else 'conferir o conteúdo e o acesso ao vídeo, ')+ 'fechar as pendências da '+link('matriz de validação',DATA['matriz_url'])+', conferir os links e reconfirmar o acesso do avaliador. Não é necessário anexar todos os arquivos separadamente ao Portal: o enunciado pede um PDF único com esses links.')])
+story.extend([para('Acessos complementares',heading),para(' | '.join(link(label,url) for label,url in DATA['acessos']),small),para('Os endpoints de homologação dependem do Learner Lab ativo. O documento não contém senhas, tokens ou credenciais. O avaliador acessa código e documentação pelos repositórios.',small),block('<b>Entrega:</b> enviar este PDF único ao Portal do Aluno. '+link('Validações e limites do ambiente',DATA['matriz_url'])+'. O Learner Lab é encerrado após a validação, conforme solicitado pelo responsável; vídeo e repositórios preservam a demonstração e as evidências.')])
 doc=SimpleDocTemplate(str(OUT),pagesize=A4,rightMargin=44,leftMargin=44,topMargin=52,bottomMargin=43,title='FIAP - Oficina - Entrega no Portal - Fase 3',author='Projeto Oficina / FIAP')
 doc.build(story,onFirstPage=furniture,onLaterPages=furniture)
 print(OUT)

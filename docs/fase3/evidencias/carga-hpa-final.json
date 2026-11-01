@@ -1,0 +1,20 @@
+{
+  "outcome": "success",
+  "load": {
+    "attempts": 654,
+    "errors": 0,
+    "aborted": false
+  },
+  "scale_up_observed": true,
+  "scale_down_observed": true,
+  "http_status_counts": {
+    "200": 655
+  },
+  "client_p95_seconds": 0.443,
+  "ready_replicas": {
+    "initial": 2,
+    "maximum": 5,
+    "final": 2
+  },
+  "workflow": "https://github.com/15SOAT-JVGG/oficina-app/actions/runs/41254582460"
+}
