@@ -24,6 +24,12 @@ jobs:
           clusters=aws('eks','list-clusters')['clusters']
           result={'time':datetime.datetime.now(datetime.timezone.utc).isoformat(),'eks':'absent'}
           if 'oficina' in clusters:result['eks']=aws('eks','describe-cluster','--name','oficina')['cluster']['status']
+          result['nodegroups']=[]
+          if 'oficina' in clusters:
+              for group in aws('eks','list-nodegroups','--cluster-name','oficina')['nodegroups']:
+                  result['nodegroups'].append(aws('eks','describe-nodegroup','--cluster-name','oficina','--nodegroup-name',group)['nodegroup']['status'])
+          reservations=aws('ec2','describe-instances','--filters','Name=tag:eks:cluster-name,Values=oficina','Name=instance-state-name,Values=pending,running,stopping,stopped,shutting-down')['Reservations']
+          result['node_instances']=[i['State']['Name'] for r in reservations for i in r['Instances']]
           result['rds']=[x['DBInstanceStatus'] for x in aws('rds','describe-db-instances')['DBInstances'] if x['DBInstanceIdentifier']=='oficina-homolog']
           result['lambdas']=sum(x['FunctionName'].startswith('oficina') for x in aws('lambda','list-functions')['Functions'])
           result['gateways']=sum(x['Name'].startswith('oficina-') for x in aws('apigatewayv2','get-apis')['Items'])
