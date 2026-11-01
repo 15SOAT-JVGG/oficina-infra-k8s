@@ -4,7 +4,7 @@ on:
     inputs:
       operation:
         type: choice
-        options: [plan, destroy]
+        options: [plan, destroy, finalize_backend]
         default: plan
         description: Plano sem alterações ou remoção após validação da entrega
       confirmation:

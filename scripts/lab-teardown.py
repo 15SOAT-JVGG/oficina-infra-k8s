@@ -43,7 +43,8 @@ def run(args, cwd=None):
 
 
 def aws(*args):
-    return json.loads(run(['aws', *args, '--output', 'json']))
+    output = run(['aws', *args, '--output', 'json'])
+    return json.loads(output) if output.strip() else {}
 
 
 def inventory():
@@ -157,6 +158,10 @@ def verify_and_remove_backend(states):
         assert not attachments, 'Cluster security group still attached: preserve until ENIs are released'
         run(['aws', 'ec2', 'delete-security-group', '--group-id', group['GroupId']])
     print('AWS verification passed: EKS, nodes, RDS, Lambdas, Gateway, ECR and project volumes absent', flush=True)
+    remove_backend_bucket()
+
+
+def remove_backend_bucket():
     versions = aws('s3api', 'list-object-versions', '--bucket', BUCKET)
     objects = versions.get('Versions', []) + versions.get('DeleteMarkers', [])
     prefixes = ('oficina-infra-k8s/', 'oficina-infra-db/', 'oficina-lambda-auth/', 'oficina/config/')
@@ -169,11 +174,32 @@ def verify_and_remove_backend(states):
     print('Dedicated FIAP state/contract bucket removed after all runtime stacks were verified absent', flush=True)
 
 
+def verify_absent_without_state():
+    assert 'oficina' not in aws('eks', 'list-clusters')['clusters']
+    assert not [x for x in aws('lambda', 'list-functions')['Functions'] if x['FunctionName'].startswith('oficina-')]
+    assert not [x for x in aws('apigatewayv2', 'get-apis')['Items'] if x['Name'].startswith('oficina-')]
+    assert not [x for x in aws('rds', 'describe-db-instances')['DBInstances'] if x['DBInstanceIdentifier'].startswith('oficina-')]
+    assert not [x for x in aws('ecr', 'describe-repositories')['repositories'] if x['repositoryName'].startswith('oficina')]
+    assert not aws('ec2', 'describe-instances', '--filters', 'Name=tag:eks:cluster-name,Values=oficina',
+                   'Name=instance-state-name,Values=pending,running,stopping,stopped')['Reservations']
+    assert not aws('ec2', 'describe-volumes', '--filters', 'Name=tag:kubernetes.io/cluster/oficina,Values=owned')['Volumes']
+    assert not [x for x in aws('ec2', 'describe-security-groups')['SecurityGroups']
+                if x['GroupName'].startswith(('oficina-', 'eks-cluster-sg-oficina-'))]
+    print('Independent AWS absence verification passed before final backend removal', flush=True)
+
+
 def main():
     os.umask(0o077)
     assert aws('sts', 'get-caller-identity')['Account'] == ACCOUNT
     operation = os.environ.get('TEARDOWN_OPERATION', 'plan')
-    assert operation in ['plan', 'destroy']
+    assert operation in ['plan', 'destroy', 'finalize_backend']
+    if operation == 'finalize_backend':
+        assert os.environ.get('TEARDOWN_CONFIRMATION') == 'DESTROY-FIAP-630266487412'
+        delivery = json.loads(pathlib.Path('docs/fase3/entrega-portal.json').read_text())
+        assert delivery['pendencias_tecnicas'] is False
+        verify_absent_without_state()
+        remove_backend_bucket()
+        return
     states = inventory()
     with tempfile.TemporaryDirectory(prefix='fiap-teardown-') as directory:
         root = pathlib.Path(directory)
