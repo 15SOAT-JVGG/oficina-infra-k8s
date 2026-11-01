@@ -29,5 +29,11 @@ jobs:
           result['gateways']=sum(x['Name'].startswith('oficina-') for x in aws('apigatewayv2','get-apis')['Items'])
           result['cluster_security_groups']=sum(x['GroupName'].startswith('eks-cluster-sg-oficina-') for x in aws('ec2','describe-security-groups')['SecurityGroups'])
           result['nlbs']=sum(x['LoadBalancerName'].startswith('oficina-') for x in aws('elbv2','describe-load-balancers')['LoadBalancers'])
+          groups=[x for x in aws('ec2','describe-security-groups')['SecurityGroups'] if x['GroupName']=='oficina-homolog-customer-auth']
+          result['lambda_security_groups']=len(groups)
+          result['lambda_network_interfaces']=[]
+          for group in groups:
+              enis=aws('ec2','describe-network-interfaces','--filters','Name=group-id,Values='+group['GroupId'])['NetworkInterfaces']
+              result['lambda_network_interfaces'] += [{'status':e['Status'],'type':e.get('InterfaceType'),'managed':e.get('RequesterManaged')} for e in enis]
           print(json.dumps(result))
           PYTHON
