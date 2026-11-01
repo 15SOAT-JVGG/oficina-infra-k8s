@@ -124,6 +124,37 @@ def remove_load_balancers():
     raise RuntimeError('NLB deletion incomplete; cluster preserved for controller reconciliation')
 
 
+def verify_and_remove_backend(states):
+    attributes = [(r['type'], i['attributes']) for state in states.values()
+                  for r in state.get('resources', []) if r.get('mode') == 'managed'
+                  for i in r.get('instances', [])]
+    expected_functions = {a['function_name'] for t, a in attributes if t == 'aws_lambda_function'}
+    expected_apis = {a['id'] for t, a in attributes if t == 'aws_apigatewayv2_api'}
+    expected_databases = {a['identifier'] for t, a in attributes if t == 'aws_db_instance'}
+    expected_repositories = {a['name'] for t, a in attributes if t == 'aws_ecr_repository'}
+    assert 'oficina' not in aws('eks', 'list-clusters')['clusters']
+    assert not expected_functions & {f['FunctionName'] for f in aws('lambda', 'list-functions')['Functions']}
+    assert not expected_apis & {a['ApiId'] for a in aws('apigatewayv2', 'get-apis')['Items']}
+    assert not expected_databases & {d['DBInstanceIdentifier'] for d in aws('rds', 'describe-db-instances')['DBInstances']}
+    assert not expected_repositories & {r['repositoryName'] for r in aws('ecr', 'describe-repositories')['repositories']}
+    nodes = aws('ec2', 'describe-instances', '--filters', 'Name=tag:eks:cluster-name,Values=oficina',
+                'Name=instance-state-name,Values=pending,running,stopping,stopped')['Reservations']
+    assert not nodes, 'Project node instances remain'
+    volumes = aws('ec2', 'describe-volumes', '--filters', 'Name=tag:kubernetes.io/cluster/oficina,Values=owned')['Volumes']
+    assert not volumes, 'Project volumes remain; inspect before deleting any data'
+    print('AWS verification passed: EKS, nodes, RDS, Lambdas, Gateway, ECR and project volumes absent', flush=True)
+    versions = aws('s3api', 'list-object-versions', '--bucket', BUCKET)
+    objects = versions.get('Versions', []) + versions.get('DeleteMarkers', [])
+    prefixes = ('oficina-infra-k8s/', 'oficina-infra-db/', 'oficina-lambda-auth/', 'oficina/config/')
+    assert all(o['Key'].startswith(prefixes) for o in objects), 'Unexpected backend content: bucket preserved'
+    for offset in range(0, len(objects), 1000):
+        payload = {'Objects': [{'Key': o['Key'], 'VersionId': o['VersionId']} for o in objects[offset:offset+1000]], 'Quiet': True}
+        result = aws('s3api', 'delete-objects', '--bucket', BUCKET, '--delete', json.dumps(payload))
+        assert not result.get('Errors'), 'Backend object deletion incomplete'
+    run(['aws', 's3api', 'delete-bucket', '--bucket', BUCKET])
+    print('Dedicated FIAP state/contract bucket removed after all runtime stacks were verified absent', flush=True)
+
+
 def main():
     os.umask(0o077)
     assert aws('sts', 'get-caller-identity')['Account'] == ACCOUNT
@@ -149,7 +180,7 @@ def main():
             state = json.loads(run(['terraform', 'state', 'pull'], folder))
             assert not [r for r in state.get('resources', []) if r.get('mode') == 'managed']
             print(json.dumps({'destroyed_state': key, 'managed_resources_remaining': 0}), flush=True)
-        print('Terraform runtime stacks destroyed. Backend retained for state audit.', flush=True)
+        verify_and_remove_backend(states)
 
 
 if __name__ == '__main__':
