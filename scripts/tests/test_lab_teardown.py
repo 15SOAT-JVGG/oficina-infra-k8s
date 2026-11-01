@@ -11,6 +11,15 @@ spec.loader.exec_module(module)
 
 
 class TeardownScopeTest(unittest.TestCase):
+    def test_quiet_success_response_is_an_empty_object(self):
+        with patch.object(module, 'run', return_value=''):
+            self.assertEqual({}, module.aws('s3api', 'delete-objects'))
+
+    def test_backend_finalization_refuses_remaining_project_cluster(self):
+        with patch.object(module, 'aws', return_value={'clusters': ['oficina']}):
+            with self.assertRaises(AssertionError):
+                module.verify_absent_without_state()
+
     def test_inventory_rejects_unknown_resources(self):
         state = {'resources': [{'mode': 'managed', 'type': 'aws_vpc', 'name': 'unrelated'}]}
         with patch.object(module, 'run', return_value=json.dumps(state)):
