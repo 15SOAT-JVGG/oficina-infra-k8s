@@ -27,13 +27,28 @@ on:
         description: Existing bucket that stores the shared Terraform state.
         required: true
         type: string
+      jwt_issuer:
+        description: Expected JWT issuer configured in the application and both token issuers.
+        required: false
+        type: string
+        default: oficina-api
     secrets:
       AWS_ACCESS_KEY_ID:
-        required: true
+        required: false
       AWS_SECRET_ACCESS_KEY:
-        required: true
+        required: false
       AWS_SESSION_TOKEN:
-        required: true
+        required: false
+      HOMOLOG_AWS_ACCESS_KEY_ID:
+        required: false
+      HOMOLOG_AWS_SECRET_ACCESS_KEY:
+        required: false
+      HOMOLOG_AWS_SESSION_TOKEN:
+        required: false
+      GRAFANA_ADMIN_PASSWORD:
+        required: false
+      AUTHORIZER_TEST_CUSTOMER_CPF:
+        required: false
 
 permissions:
   contents: read
@@ -48,10 +63,12 @@ jobs:
     if: inputs.environment == 'homolog' || inputs.environment == 'production'
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
+    outputs:
+      gateway_url: ${{ steps.gateway-url.outputs.url }}
     env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+      AWS_ACCESS_KEY_ID: ${{ inputs.environment == 'homolog' && secrets.HOMOLOG_AWS_ACCESS_KEY_ID || inputs.environment == 'production' && secrets.AWS_ACCESS_KEY_ID || '' }}
+      AWS_SECRET_ACCESS_KEY: ${{ inputs.environment == 'homolog' && secrets.HOMOLOG_AWS_SECRET_ACCESS_KEY || inputs.environment == 'production' && secrets.AWS_SECRET_ACCESS_KEY || '' }}
+      AWS_SESSION_TOKEN: ${{ inputs.environment == 'homolog' && secrets.HOMOLOG_AWS_SESSION_TOKEN || inputs.environment == 'production' && secrets.AWS_SESSION_TOKEN || '' }}
       AWS_REGION: ${{ inputs.aws_region }}
       TF_STATE_BUCKET: ${{ inputs.tf_state_bucket }}
       TF_IN_AUTOMATION: "true"
@@ -73,7 +90,7 @@ jobs:
           INFRA_REF: ${{ inputs.infra_ref }}
         run: |
           [[ "$ENVIRONMENT" == "homolog" || "$ENVIRONMENT" == "production" ]]
-          [[ "$SOURCE_KIND" == "app" || "$SOURCE_KIND" == "lambda" ]]
+          [[ "$SOURCE_KIND" == "app" || "$SOURCE_KIND" == "lambda" || "$SOURCE_KIND" == "observability" ]]
           [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
           [[ "$INFRA_REF" =~ ^[0-9a-f]{40}$ ]]
           [[ -n "$AWS_REGION" && -n "$TF_STATE_BUCKET" ]]
@@ -99,79 +116,85 @@ jobs:
             fi
           fi
 
-      - name: Identidade AWS e contratos versionados
-        id: contracts
+      - name: Reconciliar state e contratos com retry seguro
         env:
           CONTRACT_ENVIRONMENT: ${{ inputs.environment }}
           CONTRACT_SOURCE_KIND: ${{ inputs.source_kind }}
           CONTRACT_SOURCE_SHA: ${{ inputs.source_sha }}
-          CONTRACT_REGION: ${{ inputs.aws_region }}
-        run: |
-          account_id="$(aws sts get-caller-identity --query Account --output text)"
-          mkdir -p /tmp/oficina-gateway-contracts
-          for environment in homolog production; do
-            mkdir -p "/tmp/oficina-gateway-contracts/$environment"
-            for contract in upstream authorizer; do
-              key="oficina/config/v1/${environment}/${contract}.json"
-              if aws s3api head-object --bucket "$TF_STATE_BUCKET" --key "$key" \
-                >/dev/null 2>/tmp/contract-head-error; then
-                aws s3 cp "s3://${TF_STATE_BUCKET}/${key}" \
-                  "/tmp/oficina-gateway-contracts/${environment}/${contract}.json" --only-show-errors
-              elif grep -Eq '404|Not Found|NoSuchKey' /tmp/contract-head-error; then
-                continue
-              else
-                cat /tmp/contract-head-error >&2
-                exit 1
-              fi
-            done
-          done
-          python3 scripts/contracts-to-tfvars.py \
-            --contracts-dir /tmp/oficina-gateway-contracts \
-            --account-id "$account_id" \
-            --region "$CONTRACT_REGION" \
-            --environment "$CONTRACT_ENVIRONMENT" \
-            --source-kind "$CONTRACT_SOURCE_KIND" \
-            --source-sha "$CONTRACT_SOURCE_SHA" \
-            --state-resources-file /tmp/gateway-state-resources.txt \
-            --output /tmp/gateway.auto.tfvars.json
+        run: bash scripts/terraform-converge.sh reconcile
 
-      - name: Criar plano isolado para o ambiente
-        run: terraform plan -input=false -lock-timeout=60s -no-color -var-file=/tmp/gateway.auto.tfvars.json -out=/tmp/gateway.tfplan
-
-      - name: Bloquear alterações fora do roteamento do ambiente
+      - name: Resolve URL atual do Gateway
+        id: gateway-url
         env:
           TARGET_ENVIRONMENT: ${{ inputs.environment }}
         run: |
-          terraform show -json /tmp/gateway.tfplan > /tmp/gateway-plan.json
-          python3 - <<'PY'
-          import json
-          import os
-          import sys
+          gateway_url="$(terraform output -json | jq -er --arg environment "$TARGET_ENVIRONMENT" \
+            '.api_gateway_urls.value[$environment] | select(type == "string" and length > 0)')"
+          echo "url=$gateway_url" >> "$GITHUB_OUTPUT"
 
-          environment = os.environ["TARGET_ENVIRONMENT"]
-          plan = json.load(open("/tmp/gateway-plan.json", encoding="utf-8"))
-          allowed = {
-              f'aws_apigatewayv2_integration.cluster["{environment}"]',
-              f'aws_apigatewayv2_route.cluster["{environment}"]',
-              f'aws_apigatewayv2_route.root["{environment}"]',
-              f'aws_apigatewayv2_authorizer.jwt["{environment}"]',
-              f'aws_lambda_permission.gateway_authorizer["{environment}"]',
+  authorizer-integration:
+    name: Authorizer pelo Gateway (${{ inputs.environment }})
+    needs: reconcile
+    if: inputs.environment == 'homolog' && needs.reconcile.result == 'success'
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    env:
+      AUTHORIZER_TEST_CUSTOMER_CPF: ${{ secrets.AUTHORIZER_TEST_CUSTOMER_CPF }}
+      JWT_ISSUER: ${{ inputs.jwt_issuer }}
+      GATEWAY_URL: ${{ needs.reconcile.outputs.gateway_url }}
+      GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
+    steps:
+      - name: Checkout infraestrutura
+        uses: actions/checkout@v4
+        with:
+          repository: 15SOAT-JVGG/oficina-infra-k8s
+          ref: ${{ inputs.infra_ref }}
+
+      - name: Validar fixture de homologação
+        if: inputs.source_kind != 'observability'
+        run: |
+          [[ -n "$GATEWAY_URL" ]] || { echo "URL do Gateway ausente após reconciliação." >&2; exit 1; }
+          [[ "$AUTHORIZER_TEST_CUSTOMER_CPF" =~ ^[0-9]{11}$ ]] || {
+            echo "Configure o secret AUTHORIZER_TEST_CUSTOMER_CPF com o CPF de uma conta CUSTOMER sintética e ativa." >&2
+            exit 1
           }
-          invalid = []
-          for change in plan.get("resource_changes", []):
-              address = change["address"]
-              actions = change["change"]["actions"]
-              if actions == ["no-op"]:
-                  continue
-              if address.startswith(f'aws_apigatewayv2_route.public["{environment}|'):
-                  continue
-              if address not in allowed:
-                  invalid.append(f"{address}: {','.join(actions)}")
-          if invalid:
-              print("Plano recusado: alteração fora do roteamento do ambiente solicitado:", file=sys.stderr)
-              print("\n".join(invalid), file=sys.stderr)
-              raise SystemExit(1)
-          PY
 
-      - name: Aplicar plano revisado
-        run: terraform apply -input=false -auto-approve /tmp/gateway.tfplan
+      - name: Testar rotas públicas, Authorizer e RBAC
+        if: inputs.source_kind != 'observability'
+        run: scripts/api-gateway-authorizer-smoke-test.sh "$GATEWAY_URL"
+
+      - name: Verificar tela de login pública do Grafana
+        if: inputs.source_kind == 'observability'
+        run: |
+          status="$(curl --silent --show-error --location --max-redirs 5 --max-time 30 \
+            --output /tmp/grafana-login.html --write-out '%{http_code}' \
+            "$GATEWAY_URL/observability/login")"
+          [[ "$status" == "200" ]] || {
+            echo "Login do Grafana retornou HTTP $status pelo API Gateway." >&2
+            exit 1
+          }
+
+      - name: Verificar credencial e banco do Grafana sem expor secrets
+        if: inputs.source_kind == 'observability'
+        run: |
+          python3 - <<'PYTHON'
+          import base64, json, os, urllib.request
+          base = os.environ['GATEWAY_URL'].rstrip('/') + '/observability'
+          password = os.environ['GRAFANA_ADMIN_PASSWORD']
+          if not password:
+              raise SystemExit('Secret GRAFANA_ADMIN_PASSWORD ausente.')
+          credential = base64.b64encode(('admin:' + password).encode()).decode()
+          request = urllib.request.Request(base + '/api/user', headers={'Authorization': 'Basic ' + credential})
+          try:
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  user = json.load(response)
+                  if response.status != 200 or user.get('login') != 'admin':
+                      raise SystemExit('Credencial do Grafana não foi validada.')
+              with urllib.request.urlopen(base + '/api/health', timeout=30) as response:
+                  health = json.load(response)
+                  if response.status != 200 or health.get('database') != 'ok':
+                      raise SystemExit('Banco do Grafana não está saudável.')
+          except Exception:
+              raise SystemExit('Falha ao verificar autenticação/saúde do Grafana; nenhum secret foi registrado.')
+          print('Grafana: login admin autenticado HTTP 200; banco saudável HTTP 200.')
+          PYTHON

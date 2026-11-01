@@ -21,6 +21,9 @@ jobs:
     if: github.ref_name == inputs.target_environment
     environment: ${{ inputs.target_environment }}
     runs-on: ubuntu-latest
+    outputs:
+      tf_state_bucket: ${{ steps.environment-config.outputs.tf_state_bucket }}
+      aws_region: ${{ steps.environment-config.outputs.aws_region }}
     env:
       AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
       AWS_ACCESS_KEY_ID: ${{ inputs.target_environment == 'homolog' && secrets.HOMOLOG_AWS_ACCESS_KEY_ID || inputs.target_environment == 'production' && secrets.AWS_ACCESS_KEY_ID || '' }}
@@ -31,17 +34,35 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Checkout application-owned ServiceMonitor contract
+        uses: actions/checkout@v4
+        with:
+          repository: 15SOAT-JVGG/oficina-app
+          ref: f56897c0a4959d1ed3576d15ccc1920d9bd53e24
+          path: .app-observability
+          sparse-checkout: k8s/base/servicemonitor.yaml
+          sparse-checkout-cone-mode: false
+
       - uses: azure/setup-helm@v4
         with:
           version: v3.17.3
 
       - name: Validate environment credentials without printing values
+        id: environment-config
+        env:
+          TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
         run: |
           [[ -n "$AWS_ACCESS_KEY_ID" && -n "$AWS_SECRET_ACCESS_KEY" && -n "$AWS_SESSION_TOKEN" ]]
           [[ -n "$GRAFANA_ADMIN_PASSWORD" ]]
           aws sts get-caller-identity --query Account --output text >/dev/null
+          [[ -n "$TF_STATE_BUCKET" ]]
+          aws s3api head-bucket --bucket "$TF_STATE_BUCKET"
+          echo "tf_state_bucket=$TF_STATE_BUCKET" >> "$GITHUB_OUTPUT"
+          echo "aws_region=$AWS_REGION" >> "$GITHUB_OUTPUT"
 
       - name: Install or upgrade the shared observability stack
+        env:
+          APP_SERVICEMONITOR_MANIFEST: ${{ github.workspace }}/.app-observability/k8s/base/servicemonitor.yaml
         run: observability/scripts/deploy.sh
 
       - name: Publish internal Grafana listener contract
@@ -100,6 +121,6 @@ jobs:
       source_kind: observability
       source_sha: ${{ github.sha }}
       infra_ref: ${{ github.sha }}
-      aws_region: ${{ vars.AWS_REGION || 'us-east-1' }}
-      tf_state_bucket: ${{ vars.TF_STATE_BUCKET }}
+      aws_region: ${{ needs.apply.outputs.aws_region }}
+      tf_state_bucket: ${{ needs.apply.outputs.tf_state_bucket }}
     secrets: inherit
