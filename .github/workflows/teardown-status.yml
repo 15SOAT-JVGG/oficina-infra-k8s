@@ -50,7 +50,7 @@ jobs:
               codes=collections.Counter()
               for event in events:
                   record=json.loads(event['CloudTrailEvent'])
-                  if record.get('requestParameters',{}).get('networkInterfaceId') in eni_ids:
+                  if (record.get('requestParameters') or {}).get('networkInterfaceId') in eni_ids:
                       codes[record.get('errorCode','success')]+=1
               result['lambda_network_delete_event_codes']=dict(codes)
           except subprocess.CalledProcessError:
