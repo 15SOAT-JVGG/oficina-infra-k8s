@@ -142,6 +142,17 @@ def verify_and_remove_backend(states):
     assert not nodes, 'Project node instances remain'
     volumes = aws('ec2', 'describe-volumes', '--filters', 'Name=tag:kubernetes.io/cluster/oficina,Values=owned')['Volumes']
     assert not volumes, 'Project volumes remain; inspect before deleting any data'
+    cluster_groups = {v['cluster_security_group_id'] for t, a in attributes if t == 'aws_eks_cluster'
+                      for v in a.get('vpc_config', []) if v.get('cluster_security_group_id')}
+    groups = aws('ec2', 'describe-security-groups')['SecurityGroups']
+    for group in groups:
+        if group['GroupId'] not in cluster_groups:
+            continue
+        assert group['GroupName'].startswith('eks-cluster-sg-oficina-'), 'Unexpected cluster security group'
+        attachments = aws('ec2', 'describe-network-interfaces', '--filters',
+                          'Name=group-id,Values='+group['GroupId'])['NetworkInterfaces']
+        assert not attachments, 'Cluster security group still attached: preserve until ENIs are released'
+        run(['aws', 'ec2', 'delete-security-group', '--group-id', group['GroupId']])
     print('AWS verification passed: EKS, nodes, RDS, Lambdas, Gateway, ECR and project volumes absent', flush=True)
     versions = aws('s3api', 'list-object-versions', '--bucket', BUCKET)
     objects = versions.get('Versions', []) + versions.get('DeleteMarkers', [])
