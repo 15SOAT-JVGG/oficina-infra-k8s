@@ -66,3 +66,10 @@ Alertas são consultáveis no Grafana/Prometheus/Alertmanager; não foi configur
   apenas para produzir evidência adicional ou aumentar custo no Lab.
 - Os endpoints de runtime dependem dos recursos AWS. Após o destroy solicitado,
   a avaliação deve usar o vídeo, código, diagramas e evidências dos workflows.
+
+
+## Encerramento após a validação
+
+[Registro completo](ENCERRAMENTO.md). Todas as stacks foram removidas, com zero recursos gerenciados,
+e a [verificação final com limpeza do bucket](https://github.com/15SOAT-JVGG/oficina-infra-k8s/actions/runs/41258553104) passou.
+Os endpoints de runtime e a massa deixaram de existir após o destroy solicitado; vídeo e repositórios permanecem disponíveis.

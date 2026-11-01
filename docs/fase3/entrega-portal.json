@@ -165,5 +165,7 @@
   "matriz_url": "https://github.com/15SOAT-JVGG/oficina-infra-k8s/blob/main/docs/fase3/VALIDACAO.md",
   "video_acesso_verificado_em": "31/10/2026",
   "video_acesso": "Acessível sem login na consulta de metadados do YouTube",
-  "video_conteudo_confirmado_pelo_autor_em": "31/10/2026"
+  "video_conteudo_confirmado_pelo_autor_em": "31/10/2026",
+  "ambiente_encerrado_em": "31/10/2026 (BRT)",
+  "encerramento_url": "https://github.com/15SOAT-JVGG/oficina-infra-k8s/actions/runs/41258553104"
 }

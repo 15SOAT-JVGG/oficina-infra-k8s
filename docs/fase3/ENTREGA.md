@@ -39,3 +39,10 @@ Swagger e Grafana dependem de infraestrutura ativa; vídeo, código, documentos 
 Editar [entrega-portal.json](entrega-portal.json) e executar
 `python3 docs/fase3/gerar-entrega-portal.py` com ReportLab instalado.
 Não incluir credenciais, tokens ou senhas no PDF.
+
+
+## Ambiente encerrado
+
+O destroy foi concluído após os testes. [Comprovação e detalhes](ENCERRAMENTO.md).
+[Finalização aprovada](https://github.com/15SOAT-JVGG/oficina-infra-k8s/actions/runs/41258553104).
+API, Swagger e Grafana estão desligados; enviar o PDF, o vídeo e os links dos repositórios conforme o enunciado.
