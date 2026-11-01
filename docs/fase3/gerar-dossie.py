@@ -81,7 +81,7 @@ for file_index,name in enumerate(order):
             if rows[0][0]=='Repositório / pipeline': ratios=[.26,.39,.35]
             data=[[Paragraph(inline(c,path.parent),styles['CellCustom']) for c in r+['']*(n-len(r))] for r in rows]
             table=LongTable(data,colWidths=[(pw-88)*v for v in ratios],repeatRows=1,hAlign='LEFT')
-            table.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,0),colors.HexColor('#e0ebf4')),('VALIGN',(0,0),(-1,-1),'TOP'),('ROWBACKGROUNDS',(0,1),(-1,-1),[colors.white,colors.HexColor('#f6f8fb')]),('LINEBELOW',(0,0),(-1,0),.6,colors.HexColor('#8ea8bd')),('BOTTOMPADDING',(0,0),(-1,-1),6),('TOPPADDING',(0,0),(-1,-1),6)]))
+            table.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,0),colors.HexColor('#e0ebf4')),('VALIGN',(0,0),(-1,-1),'TOP'),('ROWBACKGROUNDS',(0,1),(-1,-1),[colors.white,colors.HexColor('#f6f8fb')]),('LINEBELOW',(0,0),(-1,0),.6,colors.HexColor('#8ea8bd')),('BOTTOMPADDING',(0,0),(-1,-1),4),('TOPPADDING',(0,0),(-1,-1),4)]))
             story.extend([table,Spacer(1,9)]);continue
         if line.startswith('# '):story.append(Paragraph(inline(line[2:],path.parent),styles['H1Custom']));i+=1;continue
         if line.startswith('### '):story.append(Paragraph(inline(line[4:],path.parent),styles['H2Custom']));i+=1;continue
