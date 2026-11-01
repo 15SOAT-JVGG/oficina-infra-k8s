@@ -1,0 +1,33 @@
+name: Inspect FIAP teardown status read-only
+on:
+  push:
+    branches: [codex/teardown-status]
+permissions: {}
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    environment: homolog
+    timeout-minutes: 3
+    env:
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: ${{ secrets.HOMOLOG_AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.HOMOLOG_AWS_SECRET_ACCESS_KEY }}
+      AWS_SESSION_TOKEN: ${{ secrets.HOMOLOG_AWS_SESSION_TOKEN }}
+    steps:
+      - name: Read project resource states without credentials or data
+        run: |
+          python3 - <<'PYTHON'
+          import subprocess,json,datetime
+          def aws(*args):
+              return json.loads(subprocess.check_output(['aws',*args,'--output','json'],text=True))
+          assert aws('sts','get-caller-identity')['Account']=='630266487412'
+          clusters=aws('eks','list-clusters')['clusters']
+          result={'time':datetime.datetime.now(datetime.timezone.utc).isoformat(),'eks':'absent'}
+          if 'oficina' in clusters:result['eks']=aws('eks','describe-cluster','--name','oficina')['cluster']['status']
+          result['rds']=[x['DBInstanceStatus'] for x in aws('rds','describe-db-instances')['DBInstances'] if x['DBInstanceIdentifier']=='oficina-homolog']
+          result['lambdas']=sum(x['FunctionName'].startswith('oficina') for x in aws('lambda','list-functions')['Functions'])
+          result['gateways']=sum(x['Name'].startswith('oficina-') for x in aws('apigatewayv2','get-apis')['Items'])
+          result['cluster_security_groups']=sum(x['GroupName'].startswith('eks-cluster-sg-oficina-') for x in aws('ec2','describe-security-groups')['SecurityGroups'])
+          result['nlbs']=sum(x['LoadBalancerName'].startswith('oficina-') for x in aws('elbv2','describe-load-balancers')['LoadBalancers'])
+          print(json.dumps(result))
+          PYTHON
