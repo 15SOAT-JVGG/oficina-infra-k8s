@@ -1,5 +1,8 @@
 # Massa pronta - criada automaticamente
 
+> **Ambiente encerrado:** a homologação foi validada e os recursos AWS foram removidos a pedido do responsável. Os links de API/Grafana e os IDs da massa são referências da demonstração. Veja o [registro de encerramento](ENCERRAMENTO.md); para repetir as chamadas, reimplante o ambiente e execute o seed novamente.
+
+
 Seed aprovado em 31/10/2026, às 12h02 (America/Sao_Paulo).
 [Execução e artifact](https://github.com/15SOAT-JVGG/oficina-app/actions/runs/41212663163).
 

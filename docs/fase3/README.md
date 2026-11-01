@@ -1,5 +1,8 @@
 # Fase 3 - documentação da Oficina
 
+> **Ambiente encerrado:** a homologação foi validada e os recursos AWS foram removidos a pedido do responsável. Os links de API/Grafana e os IDs da massa são referências da demonstração. Veja o [registro de encerramento](ENCERRAMENTO.md); para repetir as chamadas, reimplante o ambiente e execute o seed novamente.
+
+
 Pacote arquitetural e roteiro de homologação. Revisão: 31/10/2026 (BRT).
 O estado descrito é o ambiente acadêmico implantado. A matriz de validação diferencia
 implementação, evidência observada e pendências; documentação não substitui um teste operacional.

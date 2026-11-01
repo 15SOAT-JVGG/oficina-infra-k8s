@@ -1,5 +1,8 @@
 # Comece aqui - demonstração da Fase 3
 
+> **Ambiente encerrado:** a homologação foi validada e os recursos AWS foram removidos a pedido do responsável. Os links de API/Grafana e os IDs da massa são referências da demonstração. Veja o [registro de encerramento](ENCERRAMENTO.md); para repetir as chamadas, reimplante o ambiente e execute o seed novamente.
+
+
 ## Acessos rápidos
 
 | Acesso | Link |
