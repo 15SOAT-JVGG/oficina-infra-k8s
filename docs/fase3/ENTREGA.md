@@ -1,17 +1,16 @@
-# Entrega no Portal - vídeo incluído
+# Entrega no Portal - Fase 3
 
-[PDF único de entrega ao Portal (versão preliminar)](../../output/pdf/fiap-fase3-entrega-portal.pdf).
+[PDF único para enviar à instituição](../../output/pdf/fiap-fase3-entrega-portal.pdf).
 
-Fonte editável: [entrega-portal.json](entrega-portal.json). Para gerar novamente:
-`python3 docs/fase3/gerar-entrega-portal.py`. O arquivo do Portal reúne os links;
-o dossiê técnico e os PDFs separados são materiais de consulta.
+O PDF reúne os links exigidos pelo enunciado: quatro repositórios, vídeo de até 15 minutos,
+documentação arquitetural e confirmação do avaliador. Os documentos separados e o dossiê
+continuam disponíveis para consulta; não é necessário anexar um ZIP.
 
-**Estado: vídeo incluído; revisão técnica ainda pendente.**
+## Vídeo
 
-Vídeo: [FIAP - 16SOAT - Demonstração Fase 3](https://youtu.be/hgZPRw7hWeA).
-Duração conferida nos metadados do YouTube: **13min29s (809 segundos)**. A consulta sem
-login retornou HTTP 200 e playabilityStatus=OK em 31/10/2026. Isso confirma acesso e duração,
-sem substituir revisão do conteúdo nem comprovar os requisitos técnicos pendentes.
+[FIAP - 16SOAT - Demonstração Fase 3](https://youtu.be/hgZPRw7hWeA), **13min29s**.
+Acesso e duração conferidos nos metadados do YouTube. O autor confirmou que mostrou logs
+e traces em execução. A [matriz](VALIDACAO.md) separa essa confirmação da evidência técnica dos workflows.
 
 ## Repositórios
 
@@ -20,36 +19,23 @@ sem substituir revisão do conteúdo nem comprovar os requisitos técnicos pende
 3. [oficina-infra-db](https://github.com/15SOAT-JVGG/oficina-infra-db)
 4. [oficina-app](https://github.com/15SOAT-JVGG/oficina-app)
 
-## Documentação
+## Acessos e comprovação
 
-- Índice: [Abrir](https://github.com/15SOAT-JVGG/oficina-infra-k8s/tree/main/docs/fase3)
-- Componentes, sequências, ER, RFCs, ADRs e validação: arquivos vinculados no índice.
-- Swagger: [Abrir](https://dcs5hfax0e.execute-api.us-east-1.amazonaws.com/q/swagger-ui/)
-- OpenAPI: [Abrir](https://dcs5hfax0e.execute-api.us-east-1.amazonaws.com/q/openapi?format=json)
-- Grafana: [Abrir](https://dcs5hfax0e.execute-api.us-east-1.amazonaws.com/observability/)
+- [Documentos, diagramas, RFCs e ADRs](README.md).
+- [Validação final e limites do Lab](VALIDACAO.md).
+- [Roteiro com documentos, pipelines e demonstração de réplicas](ROTEIRO-VIDEO.md).
+- [Coleção de 12 requisições e massas prontas](COMECE-AQUI.md).
+- [PR de implementação com CI aprovado](https://github.com/15SOAT-JVGG/oficina-app/pull/90).
+- [Deploy completo aprovado](https://github.com/15SOAT-JVGG/oficina-app/actions/runs/41254012718).
+- [Auditoria final de observabilidade](https://github.com/15SOAT-JVGG/oficina-infra-k8s/actions/runs/41254775789).
+- [Seed/carga/HPA](https://github.com/15SOAT-JVGG/oficina-app/actions/workflows/homolog-simulation.yml).
 
-Os links de homologação dependem da sessão/recursos do Learner Lab e devem ser conferidos
-antes da entrega. Login do Grafana usa admin e secret protegido; a senha não integra o PDF.
+`soat-architecture` foi reconfirmado nos quatro repositórios via API do GitHub.
+A homologação foi validada antes do encerramento do Learner Lab solicitado pelo responsável.
+Swagger e Grafana dependem de infraestrutura ativa; vídeo, código, documentos e evidências permanecem no GitHub/YouTube.
 
-## Execução guiada e evidências
+## Regeneração
 
-- Guia detalhado de Postman, massas e links: [COMECE-AQUI.md](COMECE-AQUI.md).
-- Action de seed: [Abrir](https://github.com/15SOAT-JVGG/oficina-app/actions/workflows/homolog-simulation.yml)
-- PR integrado com CI aprovado: [Abrir](https://github.com/15SOAT-JVGG/oficina-app/pull/86)
-- Deploy homolog aprovado: [Abrir](https://github.com/15SOAT-JVGG/oficina-app/actions/runs/41158248740)
-
-## Acesso do avaliador
-
-A consulta ao GitHub confirmou `soat-architecture` com acesso aos quatro repositórios em
-31/10/2026 (BRT), reconfirmada nesta preparação com resposta 204 nos quatro.
-Reconfirmar esse acesso antes de enviar o PDF no Portal do Aluno.
-
-## Pendências finais
-
-- Vídeo atual: **incluído**, 13min29s; conferir novamente o acesso antes do envio.
-- Fechar pendências técnicas registradas na matriz de validação.
-- Completar links dos READMEs e promover/documentar a revisão nos quatro repositórios.
-- Conferir a revisão técnica e gerar a versão de envio após fechar as pendências da matriz.
-
-O dossiê arquitetural desta revisão pode apoiar a apresentação, mas não substitui o PDF
-final enquanto as pendências de conformidade estiverem em aberto. O vídeo já está incluído.
+Editar [entrega-portal.json](entrega-portal.json) e executar
+`python3 docs/fase3/gerar-entrega-portal.py` com ReportLab instalado.
+Não incluir credenciais, tokens ou senhas no PDF.
