@@ -103,6 +103,9 @@ def plan(folder):
 
 
 def remove_load_balancers():
+    if 'oficina' not in aws('eks', 'list-clusters')['clusters']:
+        print('Project EKS already absent; no Kubernetes cleanup repeated', flush=True)
+        return
     run(['aws', 'eks', 'update-kubeconfig', '--name', 'oficina', '--region', 'us-east-1'])
     services = json.loads(run(['kubectl', 'get', 'services', '-A', '-o', 'json']))['items']
     owned = [s for s in services if s['spec']['type'] == 'LoadBalancer'
