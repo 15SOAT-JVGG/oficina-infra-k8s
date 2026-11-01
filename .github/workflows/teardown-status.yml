@@ -55,5 +55,15 @@ jobs:
               result['lambda_network_delete_event_codes']=dict(codes)
           except subprocess.CalledProcessError:
               result['lambda_network_delete_event_codes']='unavailable'
+          if result['eks']=='ACTIVE' and result['node_instances']:
+              try:
+                  import os
+                  path=os.environ['RUNNER_TEMP']+'/fiap-status-kubeconfig'
+                  subprocess.check_output(['aws','eks','update-kubeconfig','--name','oficina','--kubeconfig',path],text=True)
+                  data=json.loads(subprocess.check_output(['kubectl','--kubeconfig',path,'get','pdb','-A','-o','json','--request-timeout=10s'],text=True,stderr=subprocess.PIPE))
+                  result['disruption_budgets']=[{'namespace':x['metadata']['namespace'],'name':x['metadata']['name'],'allowed':x.get('status',{}).get('disruptionsAllowed'),'healthy':x.get('status',{}).get('currentHealthy'),'required':x.get('status',{}).get('desiredHealthy')} for x in data['items']]
+                  os.unlink(path)
+              except (subprocess.CalledProcessError,FileNotFoundError):
+                  result['disruption_budgets']='unavailable'
           print(json.dumps(result))
           PYTHON
