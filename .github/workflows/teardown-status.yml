@@ -32,8 +32,22 @@ jobs:
           groups=[x for x in aws('ec2','describe-security-groups')['SecurityGroups'] if x['GroupName']=='oficina-homolog-customer-auth']
           result['lambda_security_groups']=len(groups)
           result['lambda_network_interfaces']=[]
+          eni_ids=set()
           for group in groups:
               enis=aws('ec2','describe-network-interfaces','--filters','Name=group-id,Values='+group['GroupId'])['NetworkInterfaces']
+              eni_ids.update(e['NetworkInterfaceId'] for e in enis)
               result['lambda_network_interfaces'] += [{'status':e['Status'],'type':e.get('InterfaceType'),'managed':e.get('RequesterManaged')} for e in enis]
+          try:
+              import collections
+              start=(datetime.datetime.now(datetime.timezone.utc)-datetime.timedelta(minutes=40)).isoformat()
+              events=aws('cloudtrail','lookup-events','--lookup-attributes','AttributeKey=EventName,AttributeValue=DeleteNetworkInterface','--start-time',start,'--max-items','50')['Events']
+              codes=collections.Counter()
+              for event in events:
+                  record=json.loads(event['CloudTrailEvent'])
+                  if record.get('requestParameters',{}).get('networkInterfaceId') in eni_ids:
+                      codes[record.get('errorCode','success')]+=1
+              result['lambda_network_delete_event_codes']=dict(codes)
+          except subprocess.CalledProcessError:
+              result['lambda_network_delete_event_codes']='unavailable'
           print(json.dumps(result))
           PYTHON
